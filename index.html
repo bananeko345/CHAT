@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>安全な1からチャット</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; height: 100vh; margin: 0; }
+        #chat-box { flex: 1; overflow-y: scroll; padding: 20px; }
+        .msg { background: white; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        .ng-msg { color: #999; font-style: italic; }
+        #input-area { background: white; padding: 20px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="chat-box"></div>
+<div id="input-area">
+    <input type="text" id="msg-input" placeholder="メッセージを入力（人を傷つける言葉は禁止です）">
+    <button id="send-btn">送信</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com";
+
+    // ★ここにFirebaseの画面に表示されている firebaseConfig を貼り付けてください
+    const firebaseConfig = {
+        apiKey: "あなたのAPIキー",
+        authDomain: "あなたのドメイン",
+        projectId: "my-safe-chat-c814f",
+        storageBucket: "...",
+        messagingSenderId: "...",
+        appId: "..."
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const chatRef = ref(db, "messages");
+
+    // 安全対策：NGワードリスト
+    const ngWords = ["死ね", "殺す", "バカ"]; 
+
+    // 送信処理
+    document.getElementById("send-btn").onclick = () => {
+        let text = document.getElementById("msg-input").value;
+        if(!text) return;
+
+        // NGワードチェック
+        const isSafe = !ngWords.some(word => text.includes(word));
+        
+        push(chatRef, {
+            text: isSafe ? text : "（不適切な表現が含まれていたため表示されません）",
+            timestamp: Date.now(),
+            safe: isSafe
+        });
+        document.getElementById("msg-input").value = "";
+    };
+
+    // 受信処理（画面に表示）
+    onChildAdded(chatRef, (snapshot) => {
+        const data = snapshot.val();
+        const div = document.createElement("div");
+        div.className = data.safe ? "msg" : "msg ng-msg";
+        div.textContent = data.text;
+        document.getElementById("chat-box").appendChild(div);
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+</script>
+</body>
+</html>
