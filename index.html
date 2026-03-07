@@ -1,28 +1,377 @@
-async function sendMessage(){
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Public Web Chat</title>
+
+<style>
+
+body{
+font-family:sans-serif;
+background:#36393f;
+margin:0;
+display:flex;
+flex-direction:column;
+height:100vh;
+color:white;
+}
+
+header{
+background:#202225;
+padding:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+#chat-box{
+flex:1;
+overflow:auto;
+padding:15px;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.msg{
+display:flex;
+gap:10px;
+align-items:flex-start;
+}
+
+.avatar{
+width:40px;
+height:40px;
+border-radius:50%;
+}
+
+.bubble{
+background:#40444b;
+padding:10px 15px;
+border-radius:10px;
+max-width:70%;
+}
+
+.name{
+font-size:12px;
+color:#b9bbbe;
+margin-bottom:3px;
+}
+
+#input-area{
+display:flex;
+padding:10px;
+background:#40444b;
+gap:5px;
+}
+
+input{
+flex:1;
+padding:10px;
+border-radius:20px;
+border:none;
+}
+
+button{
+border:none;
+padding:8px 10px;
+border-radius:10px;
+cursor:pointer;
+}
+
+.settings{
+background:#5865f2;
+color:white;
+}
+
+#emoji-panel{
+display:none;
+position:absolute;
+bottom:70px;
+background:#2f3136;
+padding:10px;
+border-radius:10px;
+max-width:250px;
+}
+
+#emoji-panel span{
+font-size:22px;
+padding:5px;
+cursor:pointer;
+}
+
+.chat-img{
+max-width:200px;
+border-radius:10px;
+margin-top:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+
+<div>🌎 Public Web Chat</div>
+
+<div>
+<button class="settings" onclick="changeName()">名前</button>
+<button class="settings" onclick="changeIcon()">アイコン</button>
+</div>
+
+</header>
+
+<div id="chat-box"></div>
+
+<div id="emoji-panel"></div>
+
+<div id="input-area">
+
+<button onclick="toggleEmoji()">😀</button>
+
+<input id="msg-input" placeholder="メッセージ">
+
+<input type="file" id="img">
+
+<button onclick="sendMessage()">➤</button>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyBRE5BJBF-fOMJKq3yIq9IQkCFcQUYL900",
+authDomain:"my-safe-chat-c814f.firebaseapp.com",
+databaseURL:"https://my-safe-chat-c814f-default-rtdb.firebaseio.com",
+projectId:"my-safe-chat-c814f",
+storageBucket:"my-safe-chat-c814f.appspot.com",
+messagingSenderId:"126454688177",
+appId:"1:126454688177:web:24b9bba7d71b759f38819"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
+const chatRef=ref(db,"messages");
+
+const ADMIN="Bananeko345";
+
+
+// 名前
+let username=localStorage.getItem("chatName");
+
+if(!username){
+username=prompt("名前を決めてください");
+localStorage.setItem("chatName",username);
+}
+
+
+// アイコン
+let icon=localStorage.getItem("chatIcon");
+
+if(!icon){
+icon="https://cdn-icons-png.flaticon.com/512/149/149071.png";
+localStorage.setItem("chatIcon",icon);
+}
+
+
+// 名前変更
+window.changeName=()=>{
+
+const n=prompt("新しい名前");
+
+if(n && n.trim()!==""){
+username=n;
+localStorage.setItem("chatName",n);
+}
+
+}
+
+
+// アイコン変更
+window.changeIcon=()=>{
+
+const url=prompt("アイコン画像URL");
+
+if(url && url.trim()!==""){
+icon=url;
+localStorage.setItem("chatIcon",url);
+}
+
+}
+
+
+// 絵文字
+const emojis=["😀","😂","😎","😍","🥺","😭","👍","🔥","🎉","❤️","😡","🤔","👀","👏"];
+
+const panel=document.getElementById("emoji-panel");
+
+emojis.forEach(e=>{
+
+const span=document.createElement("span");
+
+span.textContent=e;
+
+span.onclick=()=>{
 
 const input=document.getElementById("msg-input");
+
+input.value+=e;
+
+panel.style.display="none";
+
+input.focus();
+
+};
+
+panel.appendChild(span);
+
+});
+
+
+window.toggleEmoji=()=>{
+
+panel.style.display=
+panel.style.display==="block"?"none":"block";
+
+}
+
+
+// 送信
+window.sendMessage=()=>{
+
+const input=document.getElementById("msg-input");
+
 const file=document.getElementById("img").files[0];
 
 const text=input.value.trim();
 
 if(text==="" && !file) return;
 
-let imageURL=null;
+let image=null;
 
 if(file){
-
-imageURL=URL.createObjectURL(file);
-
+image=URL.createObjectURL(file);
 }
 
 push(chatRef,{
 name:username,
 icon:icon,
 text:text,
-image:imageURL
+image:image
 });
 
 input.value="";
 document.getElementById("img").value="";
 
 }
+
+
+// Enter送信
+document.getElementById("msg-input").addEventListener("keypress",(e)=>{
+
+if(e.key==="Enter") sendMessage();
+
+});
+
+
+// 表示
+onChildAdded(chatRef,(snapshot)=>{
+
+const data=snapshot.val();
+const key=snapshot.key;
+
+const msg=document.createElement("div");
+msg.className="msg";
+
+const avatar=document.createElement("img");
+avatar.className="avatar";
+avatar.src=data.icon;
+
+const bubble=document.createElement("div");
+bubble.className="bubble";
+
+const name=document.createElement("div");
+name.className="name";
+name.textContent=data.name;
+
+bubble.appendChild(name);
+
+if(data.text){
+
+const text=document.createElement("div");
+text.textContent=data.text;
+bubble.appendChild(text);
+
+}
+
+if(data.image){
+
+const img=document.createElement("img");
+img.src=data.image;
+img.className="chat-img";
+
+bubble.appendChild(img);
+
+}
+
+msg.appendChild(avatar);
+msg.appendChild(bubble);
+
+const chatBox=document.getElementById("chat-box");
+
+chatBox.appendChild(msg);
+
+chatBox.scrollTop=chatBox.scrollHeight;
+
+
+// 長押し削除
+let timer;
+
+msg.addEventListener("touchstart",()=>{
+
+timer=setTimeout(()=>{
+
+if(username===data.name || username===ADMIN){
+
+if(confirm("このメッセージ削除する？")){
+remove(ref(db,"messages/"+key));
+}
+
+}
+
+},600);
+
+});
+
+msg.addEventListener("touchend",()=>{
+
+clearTimeout(timer);
+
+});
+
+
+// PC右クリック削除
+msg.oncontextmenu=(e)=>{
+
+e.preventDefault();
+
+if(username===data.name || username===ADMIN){
+
+if(confirm("このメッセージ削除する？")){
+remove(ref(db,"messages/"+key));
+}
+
+}
+
+};
+
+});
+
+</script>
+
+</body>
+</html>
