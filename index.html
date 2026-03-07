@@ -11,25 +11,41 @@
 body{
 margin:0;
 font-family:sans-serif;
-background:linear-gradient(135deg,#2b2d31,#1e1f22);
-height:100vh;
+background:#1e1f22;
+color:white;
 display:flex;
 flex-direction:column;
-color:white;
+height:100vh;
 }
 
 header{
-background:#111214;
-padding:15px 20px;
-font-size:20px;
-font-weight:bold;
 display:flex;
 justify-content:space-between;
 align-items:center;
+padding:12px 20px;
+background:#111214;
 border-bottom:1px solid #2f3136;
 }
 
-header span{color:#57f287;}
+.logo{
+font-size:20px;
+font-weight:bold;
+color:#57f287;
+}
+
+.menu{
+display:flex;
+gap:10px;
+}
+
+button{
+background:#5865f2;
+border:none;
+color:white;
+padding:6px 12px;
+border-radius:8px;
+cursor:pointer;
+}
 
 #chat-box{
 flex:1;
@@ -37,33 +53,25 @@ overflow:auto;
 padding:20px;
 display:flex;
 flex-direction:column;
-gap:15px;
+gap:14px;
 }
 
 .msg{
 display:flex;
 gap:10px;
-animation:fade .2s ease;
-}
-
-@keyframes fade{
-from{opacity:0;transform:translateY(10px);}
-to{opacity:1;}
 }
 
 .avatar{
 width:42px;
 height:42px;
 border-radius:50%;
-border:2px solid #444;
 }
 
 .bubble{
 background:#2f3136;
 padding:10px 14px;
-border-radius:12px;
+border-radius:10px;
 max-width:70%;
-box-shadow:0 2px 5px rgba(0,0,0,0.3);
 }
 
 .name{
@@ -75,44 +83,31 @@ margin-bottom:4px;
 .chat-img{
 max-width:220px;
 border-radius:8px;
-margin-top:5px;
+margin-top:6px;
 }
 
 .file{
-margin-top:5px;
-color:#57a6ff;
-text-decoration:none;
 display:block;
+margin-top:6px;
+color:#57a6ff;
 }
 
 #input-area{
-background:#1e1f22;
-padding:10px;
 display:flex;
 gap:6px;
-align-items:center;
+padding:10px;
+background:#111214;
 border-top:1px solid #2f3136;
 }
 
 #msg-input{
 flex:1;
 padding:10px;
-border-radius:20px;
 border:none;
+border-radius:20px;
 background:#2f3136;
 color:white;
 }
-
-button{
-background:#5865f2;
-border:none;
-color:white;
-padding:8px 12px;
-border-radius:10px;
-cursor:pointer;
-}
-
-.settings{background:#3ba55c;}
 
 #emoji-panel{
 position:absolute;
@@ -122,22 +117,16 @@ background:#2f3136;
 padding:10px;
 border-radius:10px;
 display:none;
-max-width:250px;
 }
 
 #emoji-panel span{
 font-size:22px;
-padding:5px;
 cursor:pointer;
-}
-
-#emoji-panel span:hover{
-background:#444;
-border-radius:5px;
+padding:4px;
 }
 
 .file-label{
-font-size:12px;
+font-size:11px;
 color:#aaa;
 }
 
@@ -147,11 +136,14 @@ color:#aaa;
 <body>
 
 <header>
-<div>🍌 <span>BANANEKO CHAT</span></div>
-<div>
-<button class="settings" onclick="changeName()">名前</button>
-<button class="settings" onclick="changeIcon()">アイコン</button>
+
+<div class="logo">🍌 BANANEKO CHAT</div>
+
+<div class="menu">
+<button onclick="changeName()">名前</button>
+<button onclick="changeIcon()">アイコン</button>
 </div>
+
 </header>
 
 <div id="chat-box"></div>
@@ -170,7 +162,7 @@ color:#aaa;
 <div class="file-label">ファイル</div>
 <input type="file" id="file-input">
 
-<button onclick="sendMessage()">➤</button>
+<button onclick="sendMessage()">送信</button>
 
 </div>
 
@@ -217,34 +209,68 @@ localStorage.setItem("chatName",n);
 }
 }
 
-window.changeIcon=()=>{
-const url=prompt("アイコンURL");
+window.changeIcon=async()=>{
+
+const type=prompt("1:URL  2:端末画像");
+
+if(type==="1"){
+
+const url=prompt("画像URL");
 if(url){
 icon=url;
 localStorage.setItem("chatIcon",url);
 }
+
 }
 
-const emojis=["😀","😂","😎","😍","🥺","😭","👍","🔥","🎉","❤️","😡","🤔","👀","👏"];
+if(type==="2"){
+
+const input=document.createElement("input");
+input.type="file";
+input.accept="image/*";
+
+input.onchange=()=>{
+const file=input.files[0];
+const reader=new FileReader();
+
+reader.onload=e=>{
+icon=e.target.result;
+localStorage.setItem("chatIcon",icon);
+};
+
+reader.readAsDataURL(file);
+};
+
+input.click();
+
+}
+
+}
+
+const emojis=["😀","😂","😎","😍","🥺","😭","👍","🔥","🎉","❤️"];
 
 const panel=document.getElementById("emoji-panel");
 
 emojis.forEach(e=>{
 const span=document.createElement("span");
 span.textContent=e;
+
 span.onclick=()=>{
 document.getElementById("msg-input").value+=e;
 panel.style.display="none";
 };
+
 panel.appendChild(span);
+
 });
 
 window.toggleEmoji=()=>{
-panel.style.display=panel.style.display==="block"?"none":"block";
+panel.style.display=
+panel.style.display==="block"?"none":"block";
 }
 
 function readImage(file){
-return new Promise((resolve)=>{
+return new Promise(resolve=>{
 const reader=new FileReader();
 reader.onload=e=>resolve(e.target.result);
 reader.readAsDataURL(file);
@@ -284,12 +310,11 @@ fileName:fileName
 document.getElementById("msg-input").value="";
 document.getElementById("img").value="";
 document.getElementById("file-input").value="";
+
 }
 
-document.getElementById("msg-input").addEventListener("keydown",(e)=>{
-if(e.key==="Enter"){
-sendMessage();
-}
+document.getElementById("msg-input").addEventListener("keydown",e=>{
+if(e.key==="Enter") sendMessage();
 });
 
 onChildAdded(chatRef,(snapshot)=>{
@@ -314,25 +339,31 @@ name.textContent=data.name;
 bubble.appendChild(name);
 
 if(data.text){
+
 const text=document.createElement("div");
 text.textContent=data.text;
 bubble.appendChild(text);
+
 }
 
 if(data.image){
+
 const img=document.createElement("img");
 img.src=data.image;
 img.className="chat-img";
 bubble.appendChild(img);
+
 }
 
 if(data.file){
+
 const link=document.createElement("a");
 link.href=data.file;
 link.download=data.fileName;
-link.textContent="📦 "+data.fileName+" をダウンロード";
+link.textContent="📦 "+data.fileName;
 link.className="file";
 bubble.appendChild(link);
+
 }
 
 msg.appendChild(avatar);
@@ -341,29 +372,10 @@ msg.appendChild(bubble);
 const chatBox=document.getElementById("chat-box");
 
 chatBox.appendChild(msg);
+
 chatBox.scrollTop=chatBox.scrollHeight;
 
-let timer;
-
-msg.addEventListener("touchstart",()=>{
-
-timer=setTimeout(()=>{
-
-if(username===data.name || username===ADMIN){
-
-if(confirm("このメッセージ削除する？")){
-remove(ref(db,"messages/"+key));
-}
-
-}
-
-},600);
-
-});
-
-msg.addEventListener("touchend",()=>clearTimeout(timer));
-
-msg.oncontextmenu=(e)=>{
+msg.oncontextmenu=e=>{
 
 e.preventDefault();
 
