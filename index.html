@@ -8,18 +8,15 @@
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #e5ddd5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         header { background: #075e54; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2em; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { background: white; padding: 10px 15px; border-radius: 15px; max-width: 80%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; position: relative; }
-        .msg-time { font-size: 0.7em; color: #999; display: block; text-align: right; margin-top: 5px; }
-        .warning { color: #d93025; font-weight: bold; background: #fce8e6; }
+        .msg { background: white; padding: 10px 15px; border-radius: 15px; max-width: 80%; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; }
         #input-area { background: #f0f0f0; padding: 10px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
         input { flex: 1; padding: 12px 15px; border: 1px solid #ccc; border-radius: 25px; outline: none; font-size: 1em; }
         button { background: #128c7e; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 1.2em; display: flex; align-items: center; justify-content: center; }
-        button:hover { background: #075e54; }
     </style>
 </head>
 <body>
 
-<header>🌎 世界とつながる安全チャット</header>
+<header>🌎 安心・安全チャット</header>
 <div id="chat-box"></div>
 <div id="input-area">
     <input type="text" id="msg-input" placeholder="メッセージを入力..." autocomplete="off">
@@ -31,7 +28,7 @@
     import { initializeApp } from "https://www.gstatic.com";
     import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com";
 
-    // --- 【重要】あなたのFirebase設定 ---
+    // あなたのFirebaseプロジェクト設定（画像から抽出済み）
     const firebaseConfig = {
         apiKey: "AIzaSyBRE5BJBF-fOMJKq3yIq9IQkCFcQUYL900",
         authDomain: "my-safe-chat-c814f.firebaseapp.com",
@@ -39,59 +36,48 @@
         projectId: "my-safe-chat-c814f",
         storageBucket: "my-safe-chat-c814f.firebasestorage.app",
         messagingSenderId: "126454688177",
-        appId: "1:126454688177:web:24b9bba7d71b759f38819",
-        measurementId: "G-KX7EWZ6KC6"
+        appId: "1:126454688177:web:24b9bba7d71b759f38819"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const chatRef = ref(db, "messages");
 
-    // 安全対策：NGワード（自由に追加してください）
-    const ngWords = ["死ね", "殺す", "バカ", "あほ", "ゴミ"];
-
-    // 送信ボタンクリック時の処理
-    const sendBtn = document.getElementById("send-btn");
-    const msgInput = document.getElementById("msg-input");
+    // 安全対策：NGワード
+    const ngWords = ["死ね", "殺す", "バカ"];
 
     function sendMessage() {
-        let text = msgInput.value.trim();
+        const input = document.getElementById("msg-input");
+        let text = input.value.trim();
         if (!text) return;
 
         // NGワードが含まれているかチェック
-        const containsNG = ngWords.some(word => text.includes(word));
-        const filteredText = containsNG ? "⚠️ 不適切な表現が含まれていたため非表示にされました" : text;
+        const isSafe = !ngWords.some(word => text.includes(word));
+        const finalBtn = isSafe ? text : "⚠️ 不適切な表現が含まれていたため非表示にされました";
 
         push(chatRef, {
-            text: filteredText,
+            text: finalBtn,
             createdAt: serverTimestamp(),
-            isSafe: !containsNG
+            safe: isSafe
+        }).then(() => {
+            input.value = ""; // 送信成功したら入力欄を空にする
+        }).catch((e) => {
+            alert("エラーが発生しました。Firebaseの「公開」ボタンを押したか確認してください。");
         });
-        msgInput.value = "";
     }
 
-    sendBtn.addEventListener("click", sendMessage);
-    msgInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") sendMessage();
-    });
+    document.getElementById("send-btn").onclick = sendMessage;
+    document.getElementById("msg-input").onkeypress = (e) => { if (e.key === "Enter") sendMessage(); };
 
-    // データベースに新しいメッセージが追加されたら画面に表示
+    // 受信処理
     onChildAdded(chatRef, (snapshot) => {
         const data = snapshot.val();
         const chatBox = document.getElementById("chat-box");
-        
         const div = document.createElement("div");
-        div.className = data.isSafe ? "msg" : "msg warning";
+        div.className = "msg";
         div.textContent = data.text;
-
-        const timeSpan = document.createElement("span");
-        timeSpan.className = "msg-time";
-        const date = data.createdAt ? new Date(data.createdAt) : new Date();
-        timeSpan.textContent = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        div.appendChild(timeSpan);
-
         chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight; // 一番下までスクロール
+        chatBox.scrollTop = chatBox.scrollHeight;
     });
 </script>
 </body>
