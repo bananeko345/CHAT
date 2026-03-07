@@ -2,95 +2,136 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Public Web Chat</title>
+<title>BANANEKO CHAT</title>
 
 <style>
 
+*{
+box-sizing:border-box;
+}
+
 body{
-font-family:sans-serif;
-background:#36393f;
 margin:0;
+font-family:sans-serif;
+background:linear-gradient(135deg,#2b2d31,#1e1f22);
+height:100vh;
 display:flex;
 flex-direction:column;
-height:100vh;
 color:white;
 }
 
 header{
-background:#202225;
-padding:15px;
+background:#111214;
+padding:15px 20px;
+font-size:20px;
+font-weight:bold;
 display:flex;
 justify-content:space-between;
 align-items:center;
+border-bottom:1px solid #2f3136;
+}
+
+header span{
+color:#57f287;
 }
 
 #chat-box{
 flex:1;
 overflow:auto;
-padding:15px;
+padding:20px;
 display:flex;
 flex-direction:column;
-gap:10px;
+gap:15px;
 }
 
 .msg{
 display:flex;
 gap:10px;
-align-items:flex-start;
+animation:fade .2s ease;
+}
+
+@keyframes fade{
+from{opacity:0;transform:translateY(10px);}
+to{opacity:1;}
 }
 
 .avatar{
-width:40px;
-height:40px;
+width:42px;
+height:42px;
 border-radius:50%;
+border:2px solid #444;
 }
 
 .bubble{
-background:#40444b;
-padding:10px 15px;
-border-radius:10px;
+background:#2f3136;
+padding:10px 14px;
+border-radius:12px;
 max-width:70%;
+box-shadow:0 2px 5px rgba(0,0,0,0.3);
 }
 
 .name{
 font-size:12px;
-color:#b9bbbe;
-margin-bottom:3px;
+color:#aaa;
+margin-bottom:4px;
+}
+
+.chat-img{
+max-width:220px;
+border-radius:8px;
+margin-top:5px;
+}
+
+.file{
+margin-top:5px;
+color:#57a6ff;
+text-decoration:none;
+display:block;
 }
 
 #input-area{
-display:flex;
+background:#1e1f22;
 padding:10px;
-background:#40444b;
-gap:5px;
+display:flex;
+gap:6px;
+align-items:center;
+border-top:1px solid #2f3136;
 }
 
-input{
+#msg-input{
 flex:1;
 padding:10px;
 border-radius:20px;
 border:none;
+background:#2f3136;
+color:white;
 }
 
 button{
+background:#5865f2;
 border:none;
-padding:8px 10px;
+color:white;
+padding:8px 12px;
 border-radius:10px;
 cursor:pointer;
 }
 
+button:hover{
+opacity:.8;
+}
+
 .settings{
-background:#5865f2;
-color:white;
+background:#3ba55c;
 }
 
 #emoji-panel{
-display:none;
 position:absolute;
 bottom:70px;
+left:10px;
 background:#2f3136;
 padding:10px;
 border-radius:10px;
+display:none;
 max-width:250px;
 }
 
@@ -100,10 +141,21 @@ padding:5px;
 cursor:pointer;
 }
 
-.chat-img{
-max-width:200px;
-border-radius:10px;
-margin-top:5px;
+#emoji-panel span:hover{
+background:#444;
+border-radius:5px;
+}
+
+input[type=file]{
+color:white;
+}
+
+@media(max-width:600px){
+
+.bubble{
+max-width:85%;
+}
+
 }
 
 </style>
@@ -113,11 +165,13 @@ margin-top:5px;
 
 <header>
 
-<div>🌎 Public Web Chat</div>
+<div>🍌 <span>BANANEKO CHAT</span></div>
 
 <div>
+
 <button class="settings" onclick="changeName()">名前</button>
 <button class="settings" onclick="changeIcon()">アイコン</button>
+
 </div>
 
 </header>
@@ -133,6 +187,8 @@ margin-top:5px;
 <input id="msg-input" placeholder="メッセージ">
 
 <input type="file" id="img">
+
+<input type="file" id="file-input">
 
 <button onclick="sendMessage()">➤</button>
 
@@ -159,8 +215,6 @@ const chatRef=ref(db,"messages");
 
 const ADMIN="Bananeko345";
 
-
-// 名前
 let username=localStorage.getItem("chatName");
 
 if(!username){
@@ -168,8 +222,6 @@ username=prompt("名前を決めてください");
 localStorage.setItem("chatName",username);
 }
 
-
-// アイコン
 let icon=localStorage.getItem("chatIcon");
 
 if(!icon){
@@ -177,34 +229,22 @@ icon="https://cdn-icons-png.flaticon.com/512/149/149071.png";
 localStorage.setItem("chatIcon",icon);
 }
 
-
-// 名前変更
 window.changeName=()=>{
-
 const n=prompt("新しい名前");
-
-if(n && n.trim()!==""){
+if(n){
 username=n;
 localStorage.setItem("chatName",n);
 }
-
 }
 
-
-// アイコン変更
 window.changeIcon=()=>{
-
-const url=prompt("アイコン画像URL");
-
-if(url && url.trim()!==""){
+const url=prompt("アイコンURL");
+if(url){
 icon=url;
 localStorage.setItem("chatIcon",url);
 }
-
 }
 
-
-// 絵文字
 const emojis=["😀","😂","😎","😍","🥺","😭","👍","🔥","🎉","❤️","😡","🤔","👀","👏"];
 
 const panel=document.getElementById("emoji-panel");
@@ -212,73 +252,56 @@ const panel=document.getElementById("emoji-panel");
 emojis.forEach(e=>{
 
 const span=document.createElement("span");
-
 span.textContent=e;
 
 span.onclick=()=>{
-
-const input=document.getElementById("msg-input");
-
-input.value+=e;
-
+document.getElementById("msg-input").value+=e;
 panel.style.display="none";
-
-input.focus();
-
 };
 
 panel.appendChild(span);
 
 });
 
-
 window.toggleEmoji=()=>{
-
 panel.style.display=
 panel.style.display==="block"?"none":"block";
-
 }
 
-
-// 送信
 window.sendMessage=()=>{
 
-const input=document.getElementById("msg-input");
+const text=document.getElementById("msg-input").value.trim();
+const imgFile=document.getElementById("img").files[0];
+const file=document.getElementById("file-input").files[0];
 
-const file=document.getElementById("img").files[0];
-
-const text=input.value.trim();
-
-if(text==="" && !file) return;
+if(text==="" && !imgFile && !file) return;
 
 let image=null;
+let fileURL=null;
+let fileName=null;
+
+if(imgFile) image=URL.createObjectURL(imgFile);
 
 if(file){
-image=URL.createObjectURL(file);
+fileURL=URL.createObjectURL(file);
+fileName=file.name;
 }
 
 push(chatRef,{
 name:username,
 icon:icon,
 text:text,
-image:image
+image:image,
+file:fileURL,
+fileName:fileName
 });
 
-input.value="";
+document.getElementById("msg-input").value="";
 document.getElementById("img").value="";
+document.getElementById("file-input").value="";
 
 }
 
-
-// Enter送信
-document.getElementById("msg-input").addEventListener("keypress",(e)=>{
-
-if(e.key==="Enter") sendMessage();
-
-});
-
-
-// 表示
 onChildAdded(chatRef,(snapshot)=>{
 
 const data=snapshot.val();
@@ -313,8 +336,18 @@ if(data.image){
 const img=document.createElement("img");
 img.src=data.image;
 img.className="chat-img";
-
 bubble.appendChild(img);
+
+}
+
+if(data.file){
+
+const link=document.createElement("a");
+link.href=data.file;
+link.download=data.fileName;
+link.textContent="📦 "+data.fileName+" をダウンロード";
+link.className="file";
+bubble.appendChild(link);
 
 }
 
@@ -324,11 +357,8 @@ msg.appendChild(bubble);
 const chatBox=document.getElementById("chat-box");
 
 chatBox.appendChild(msg);
-
 chatBox.scrollTop=chatBox.scrollHeight;
 
-
-// 長押し削除
 let timer;
 
 msg.addEventListener("touchstart",()=>{
@@ -347,21 +377,15 @@ remove(ref(db,"messages/"+key));
 
 });
 
-msg.addEventListener("touchend",()=>{
+msg.addEventListener("touchend",()=>clearTimeout(timer));
 
-clearTimeout(timer);
-
-});
-
-
-// PC右クリック削除
 msg.oncontextmenu=(e)=>{
 
 e.preventDefault();
 
 if(username===data.name || username===ADMIN){
 
-if(confirm("このメッセージ削除する？")){
+if(confirm("削除する？")){
 remove(ref(db,"messages/"+key));
 }
 
