@@ -38,6 +38,12 @@ border-radius:15px;
 max-width:80%;
 }
 
+.name{
+font-size:12px;
+color:gray;
+margin-bottom:3px;
+}
+
 #input-area{
 display:flex;
 padding:10px;
@@ -91,25 +97,34 @@ appId: "1:126454688177:web:24b9bba7d71b759f38819"
 };
 
 const app = initializeApp(firebaseConfig);
-
 const db = getDatabase(app);
-
 const chatRef = ref(db,"messages");
+
+
+// 名前設定
+let username = localStorage.getItem("chatName");
+
+if(!username){
+username = prompt("名前を決めてください！");
+localStorage.setItem("chatName",username);
+}
+
 
 function sendMessage(){
 
 const input=document.getElementById("msg-input");
-
 const text=input.value.trim();
 
 if(!text)return;
 
 push(chatRef,{
+name:username,
 text:text
 });
 
 input.value="";
 }
+
 
 document.getElementById("send-btn").onclick=sendMessage;
 
@@ -117,15 +132,23 @@ document.getElementById("msg-input").addEventListener("keypress",(e)=>{
 if(e.key==="Enter") sendMessage();
 });
 
+
 onChildAdded(chatRef,(snapshot)=>{
 
 const data=snapshot.val();
 
 const div=document.createElement("div");
-
 div.className="msg";
 
-div.textContent=data.text;
+const name=document.createElement("div");
+name.className="name";
+name.textContent=data.name;
+
+const msg=document.createElement("div");
+msg.textContent=data.text;
+
+div.appendChild(name);
+div.appendChild(msg);
 
 document.getElementById("chat-box").appendChild(div);
 
