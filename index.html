@@ -6,9 +6,7 @@
 
 <style>
 
-*{
-box-sizing:border-box;
-}
+*{box-sizing:border-box;}
 
 body{
 margin:0;
@@ -31,9 +29,7 @@ align-items:center;
 border-bottom:1px solid #2f3136;
 }
 
-header span{
-color:#57f287;
-}
+header span{color:#57f287;}
 
 #chat-box{
 flex:1;
@@ -116,13 +112,7 @@ border-radius:10px;
 cursor:pointer;
 }
 
-button:hover{
-opacity:.8;
-}
-
-.settings{
-background:#3ba55c;
-}
+.settings{background:#3ba55c;}
 
 #emoji-panel{
 position:absolute;
@@ -146,16 +136,9 @@ background:#444;
 border-radius:5px;
 }
 
-input[type=file]{
-color:white;
-}
-
-@media(max-width:600px){
-
-.bubble{
-max-width:85%;
-}
-
+.file-label{
+font-size:12px;
+color:#aaa;
 }
 
 </style>
@@ -164,16 +147,11 @@ max-width:85%;
 <body>
 
 <header>
-
 <div>🍌 <span>BANANEKO CHAT</span></div>
-
 <div>
-
 <button class="settings" onclick="changeName()">名前</button>
 <button class="settings" onclick="changeIcon()">アイコン</button>
-
 </div>
-
 </header>
 
 <div id="chat-box"></div>
@@ -186,8 +164,10 @@ max-width:85%;
 
 <input id="msg-input" placeholder="メッセージ">
 
-<input type="file" id="img">
+<div class="file-label">画像</div>
+<input type="file" id="img" accept="image/*">
 
+<div class="file-label">ファイル</div>
 <input type="file" id="file-input">
 
 <button onclick="sendMessage()">➤</button>
@@ -250,25 +230,28 @@ const emojis=["😀","😂","😎","😍","🥺","😭","👍","🔥","🎉","�
 const panel=document.getElementById("emoji-panel");
 
 emojis.forEach(e=>{
-
 const span=document.createElement("span");
 span.textContent=e;
-
 span.onclick=()=>{
 document.getElementById("msg-input").value+=e;
 panel.style.display="none";
 };
-
 panel.appendChild(span);
-
 });
 
 window.toggleEmoji=()=>{
-panel.style.display=
-panel.style.display==="block"?"none":"block";
+panel.style.display=panel.style.display==="block"?"none":"block";
 }
 
-window.sendMessage=()=>{
+function readImage(file){
+return new Promise((resolve)=>{
+const reader=new FileReader();
+reader.onload=e=>resolve(e.target.result);
+reader.readAsDataURL(file);
+});
+}
+
+window.sendMessage=async()=>{
 
 const text=document.getElementById("msg-input").value.trim();
 const imgFile=document.getElementById("img").files[0];
@@ -280,7 +263,9 @@ let image=null;
 let fileURL=null;
 let fileName=null;
 
-if(imgFile) image=URL.createObjectURL(imgFile);
+if(imgFile){
+image=await readImage(imgFile);
+}
 
 if(file){
 fileURL=URL.createObjectURL(file);
@@ -299,8 +284,13 @@ fileName:fileName
 document.getElementById("msg-input").value="";
 document.getElementById("img").value="";
 document.getElementById("file-input").value="";
-
 }
+
+document.getElementById("msg-input").addEventListener("keydown",(e)=>{
+if(e.key==="Enter"){
+sendMessage();
+}
+});
 
 onChildAdded(chatRef,(snapshot)=>{
 
@@ -324,31 +314,25 @@ name.textContent=data.name;
 bubble.appendChild(name);
 
 if(data.text){
-
 const text=document.createElement("div");
 text.textContent=data.text;
 bubble.appendChild(text);
-
 }
 
 if(data.image){
-
 const img=document.createElement("img");
 img.src=data.image;
 img.className="chat-img";
 bubble.appendChild(img);
-
 }
 
 if(data.file){
-
 const link=document.createElement("a");
 link.href=data.file;
 link.download=data.fileName;
 link.textContent="📦 "+data.fileName+" をダウンロード";
 link.className="file";
 bubble.appendChild(link);
-
 }
 
 msg.appendChild(avatar);
