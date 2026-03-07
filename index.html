@@ -2,24 +2,26 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>安全チャット</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Public Web Chat</title>
 
 <style>
 
 body{
 font-family:sans-serif;
-background:#e5ddd5;
+background:#2f3136;
 margin:0;
 display:flex;
 flex-direction:column;
 height:100vh;
+color:white;
 }
 
 header{
-background:#075e54;
-color:white;
+background:#202225;
 padding:15px;
 text-align:center;
+font-size:18px;
 }
 
 #chat-box{
@@ -32,39 +34,63 @@ gap:10px;
 }
 
 .msg{
-background:white;
+background:#40444b;
 padding:10px 15px;
-border-radius:15px;
+border-radius:10px;
 max-width:80%;
 }
 
 .name{
 font-size:12px;
-color:gray;
-margin-bottom:3px;
+color:#aaa;
+margin-bottom:4px;
+display:flex;
+align-items:center;
+gap:6px;
+}
+
+.avatar{
+width:24px;
+height:24px;
+border-radius:50%;
+background:#5865f2;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:12px;
+}
+
+img.chat-img{
+max-width:200px;
+border-radius:8px;
+margin-top:5px;
 }
 
 #input-area{
 display:flex;
 padding:10px;
-background:#f0f0f0;
+background:#202225;
+gap:5px;
 }
 
 input{
 flex:1;
 padding:10px;
-border-radius:20px;
-border:1px solid #ccc;
+border-radius:10px;
+border:none;
 }
 
 button{
-width:50px;
 border:none;
-background:#128c7e;
+background:#5865f2;
 color:white;
-border-radius:50%;
-font-size:20px;
+padding:8px 10px;
+border-radius:8px;
 cursor:pointer;
+}
+
+#emoji{
+font-size:20px;
 }
 
 </style>
@@ -72,67 +98,127 @@ cursor:pointer;
 
 <body>
 
-<header>🌎 安全チャット</header>
+<header>🌐 Public Web Chat</header>
 
 <div id="chat-box"></div>
 
 <div id="input-area">
+
+<button id="emoji">😀</button>
+
 <input id="msg-input" placeholder="メッセージ">
-<button id="send-btn">➤</button>
+
+<input type="file" id="img-input" accept="image/*">
+
+<button id="send-btn">送信</button>
+
 </div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyBRE5BJBF-fOMJKq3yIq9IQkCFcQUYL900",
-authDomain: "my-safe-chat-c814f.firebaseapp.com",
-databaseURL: "https://my-safe-chat-c814f-default-rtdb.firebaseio.com",
-projectId: "my-safe-chat-c814f",
-storageBucket: "my-safe-chat-c814f.appspot.com",
-messagingSenderId: "126454688177",
-appId: "1:126454688177:web:24b9bba7d71b759f38819"
+apiKey:"AIzaSyBRE5BJBF-fOMJKq3yIq9IQkCFcQUYL900",
+authDomain:"my-safe-chat-c814f.firebaseapp.com",
+databaseURL:"https://my-safe-chat-c814f-default-rtdb.firebaseio.com",
+projectId:"my-safe-chat-c814f",
+storageBucket:"my-safe-chat-c814f.appspot.com",
+messagingSenderId:"126454688177",
+appId:"1:126454688177:web:24b9bba7d71b759f38819"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const chatRef = ref(db,"messages");
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
+const chatRef=ref(db,"messages");
 
 
-// 名前設定
-let username = localStorage.getItem("chatName");
+// 名前
+let username=localStorage.getItem("chatName");
 
 if(!username){
-username = prompt("名前を決めてください！");
+username=prompt("名前を決めてください");
 localStorage.setItem("chatName",username);
 }
 
 
+// 管理者
+const ADMIN="admin";
+
+
+// BAN
+let banned=localStorage.getItem("banned");
+
+if(banned){
+alert("あなたはBANされています");
+throw new Error("banned");
+}
+
+
+// 絵文字
+const emojis=["😀","😂","😎","🔥","👍","❤️","🎉"];
+
+document.getElementById("emoji").onclick=()=>{
+
+let e=prompt("絵文字を選んで\n"+emojis.join(" "));
+
+if(e)document.getElementById("msg-input").value+=e;
+
+};
+
+
+// 送信
 function sendMessage(){
 
 const input=document.getElementById("msg-input");
+const img=document.getElementById("img-input");
+
 const text=input.value.trim();
 
-if(!text)return;
+let imageData=null;
+
+if(img.files[0]){
+
+const reader=new FileReader();
+
+reader.onload=function(){
+
+push(chatRef,{
+name:username,
+text:text,
+image:reader.result
+});
+
+};
+
+reader.readAsDataURL(img.files[0]);
+
+}else{
 
 push(chatRef,{
 name:username,
 text:text
 });
 
+}
+
 input.value="";
+img.value="";
+
 }
 
 
 document.getElementById("send-btn").onclick=sendMessage;
 
 document.getElementById("msg-input").addEventListener("keypress",(e)=>{
-if(e.key==="Enter") sendMessage();
+
+if(e.key==="Enter")sendMessage();
+
 });
 
 
+// 表示
 onChildAdded(chatRef,(snapshot)=>{
 
 const data=snapshot.val();
@@ -142,13 +228,74 @@ div.className="msg";
 
 const name=document.createElement("div");
 name.className="name";
-name.textContent=data.name;
+
+const avatar=document.createElement("div");
+avatar.className="avatar";
+avatar.textContent=data.name[0];
+
+name.appendChild(avatar);
+
+const nameText=document.createElement("span");
+nameText.textContent=data.name;
+
+name.appendChild(nameText);
+
+div.appendChild(name);
+
+if(data.text){
 
 const msg=document.createElement("div");
 msg.textContent=data.text;
-
-div.appendChild(name);
 div.appendChild(msg);
+
+}
+
+if(data.image){
+
+const img=document.createElement("img");
+img.src=data.image;
+img.className="chat-img";
+div.appendChild(img);
+
+}
+
+
+// 管理者削除
+if(username===ADMIN){
+
+const del=document.createElement("button");
+
+del.textContent="削除";
+
+del.onclick=()=>{
+
+remove(snapshot.ref);
+
+};
+
+div.appendChild(del);
+
+}
+
+
+// BAN
+if(username===ADMIN){
+
+const ban=document.createElement("button");
+
+ban.textContent="BAN";
+
+ban.onclick=()=>{
+
+localStorage.setItem("banned","true");
+alert("BANしました");
+
+};
+
+div.appendChild(ban);
+
+}
+
 
 document.getElementById("chat-box").appendChild(div);
 
