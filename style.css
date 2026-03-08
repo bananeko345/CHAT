@@ -1,0 +1,366 @@
+/* ========================
+基本
+======================== */
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:sans-serif;
+background:#1e1f22;
+color:white;
+display:flex;
+flex-direction:column;
+height:100vh;
+}
+
+/* ========================
+ヘッダー
+======================== */
+
+header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:12px;
+background:#111214;
+border-bottom:1px solid #2f3136;
+flex-wrap:wrap;
+gap:6px;
+}
+
+.logo{
+font-size:18px;
+font-weight:bold;
+color:#57f287;
+}
+
+.menu{
+display:flex;
+gap:6px;
+flex-wrap:wrap;
+}
+
+/* ========================
+ボタン
+======================== */
+
+button{
+background:#5865f2;
+border:none;
+color:white;
+padding:6px 10px;
+border-radius:8px;
+cursor:pointer;
+font-size:13px;
+transition:0.2s;
+}
+
+button:hover{
+background:#4752c4;
+}
+
+/* ========================
+チャット
+======================== */
+
+#chat-box{
+flex:1;
+overflow:auto;
+padding:12px;
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+
+/* スクロール */
+
+#chat-box::-webkit-scrollbar{
+width:6px;
+}
+
+#chat-box::-webkit-scrollbar-thumb{
+background:#444;
+border-radius:6px;
+}
+
+/* ========================
+メッセージ
+======================== */
+
+.msg{
+display:flex;
+gap:10px;
+align-items:flex-start;
+animation:fadeIn 0.2s ease;
+}
+
+.avatar{
+width:40px;
+height:40px;
+border-radius:50%;
+cursor:pointer;
+transition:0.2s;
+}
+
+.avatar:hover{
+transform:scale(1.05);
+}
+
+.bubble{
+background:#2f3136;
+padding:10px;
+border-radius:10px;
+max-width:75%;
+word-break:break-word;
+}
+
+.name{
+font-size:12px;
+color:#aaa;
+margin-bottom:4px;
+}
+
+.system{
+color:#57f287;
+font-size:13px;
+}
+
+/* ========================
+画像
+======================== */
+
+.chat-img{
+max-width:220px;
+border-radius:8px;
+margin-top:6px;
+}
+
+/* ========================
+ファイル
+======================== */
+
+.file{
+display:block;
+margin-top:6px;
+color:#57a6ff;
+text-decoration:none;
+}
+
+.file:hover{
+text-decoration:underline;
+}
+
+/* ========================
+入力エリア
+======================== */
+
+#input-area{
+display:flex;
+gap:6px;
+padding:10px;
+background:#111214;
+border-top:1px solid #2f3136;
+flex-wrap:wrap;
+}
+
+#msg-input{
+flex:1;
+padding:10px;
+border:none;
+border-radius:20px;
+background:#2f3136;
+color:white;
+min-width:120px;
+outline:none;
+}
+
+.file-label{
+font-size:11px;
+color:#aaa;
+}
+
+/* ========================
+絵文字
+======================== */
+
+#emoji-panel{
+position:absolute;
+bottom:70px;
+left:10px;
+background:#2f3136;
+padding:10px;
+border-radius:10px;
+display:none;
+}
+
+#emoji-panel span{
+font-size:22px;
+padding:4px;
+cursor:pointer;
+}
+
+/* ========================
+ユーザーリスト
+======================== */
+
+#user-list{
+position:fixed;
+top:60px;
+right:10px;
+background:#2f3136;
+padding:15px;
+border-radius:10px;
+display:none;
+max-width:200px;
+max-height:300px;
+overflow:auto;
+}
+
+/* ========================
+DMパネル
+======================== */
+
+#dm-panel{
+position:fixed;
+top:60px;
+left:10px;
+background:#2f3136;
+padding:15px;
+border-radius:10px;
+display:none;
+max-width:220px;
+max-height:300px;
+overflow:auto;
+}
+
+/* ========================
+DMウィンドウ
+======================== */
+
+#dm-chat{
+position:fixed;
+bottom:0;
+right:10px;
+width:300px;
+height:400px;
+background:#2f3136;
+border-radius:10px;
+display:flex;
+flex-direction:column;
+box-shadow:0 0 10px rgba(0,0,0,0.5);
+overflow:hidden;
+}
+
+#dm-messages{
+flex:1;
+overflow:auto;
+padding:10px;
+}
+
+#dm-input{
+border:none;
+padding:8px;
+background:#1e1f22;
+color:white;
+outline:none;
+}
+
+/* ========================
+管理者パネル
+======================== */
+
+#admin-panel{
+position:fixed;
+bottom:10px;
+left:10px;
+background:#2f3136;
+padding:10px;
+border-radius:10px;
+width:220px;
+z-index:999;
+}
+
+#admin-panel button{
+margin-left:4px;
+padding:3px 6px;
+font-size:11px;
+}
+
+/* ========================
+通知バッジ
+======================== */
+
+.badge{
+background:red;
+color:white;
+font-size:10px;
+padding:2px 6px;
+border-radius:10px;
+margin-left:4px;
+}
+
+/* ========================
+アニメーション
+======================== */
+
+@keyframes fadeIn{
+
+from{
+opacity:0;
+transform:translateY(5px);
+}
+
+to{
+opacity:1;
+transform:translateY(0);
+}
+
+}
+
+/* ========================
+スマホ対応
+======================== */
+
+@media (max-width:700px){
+
+header{
+flex-direction:column;
+align-items:flex-start;
+}
+
+.avatar{
+width:34px;
+height:34px;
+}
+
+button{
+font-size:12px;
+padding:6px;
+}
+
+#dm-chat{
+width:100%;
+right:0;
+border-radius:0;
+}
+
+}
+
+/* ========================
+超小さい画面
+======================== */
+
+@media (max-width:400px){
+
+.logo{
+font-size:15px;
+}
+
+#msg-input{
+min-width:80px;
+}
+
+}
