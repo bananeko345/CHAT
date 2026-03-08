@@ -22,56 +22,62 @@ header{
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding:12px 20px;
+padding:12px;
 background:#111214;
 border-bottom:1px solid #2f3136;
+flex-wrap:wrap;
+gap:6px;
 }
 
 .logo{
-font-size:20px;
+font-size:18px;
 font-weight:bold;
 color:#57f287;
 }
 
 .menu{
 display:flex;
-gap:10px;
+gap:6px;
+flex-wrap:wrap;
 }
 
 button{
 background:#5865f2;
 border:none;
 color:white;
-padding:6px 12px;
+padding:6px 10px;
 border-radius:8px;
 cursor:pointer;
+font-size:13px;
 }
 
 #chat-box{
 flex:1;
 overflow:auto;
-padding:20px;
+padding:12px;
 display:flex;
 flex-direction:column;
-gap:14px;
+gap:12px;
 }
 
 .msg{
 display:flex;
 gap:10px;
+align-items:flex-start;
 }
 
 .avatar{
-width:42px;
-height:42px;
+width:40px;
+height:40px;
 border-radius:50%;
+cursor:pointer;
 }
 
 .bubble{
 background:#2f3136;
-padding:10px 14px;
+padding:10px;
 border-radius:10px;
-max-width:70%;
+max-width:75%;
 }
 
 .name{
@@ -86,7 +92,7 @@ font-size:13px;
 }
 
 .chat-img{
-max-width:220px;
+max-width:200px;
 border-radius:8px;
 margin-top:6px;
 }
@@ -103,6 +109,7 @@ gap:6px;
 padding:10px;
 background:#111214;
 border-top:1px solid #2f3136;
+flex-wrap:wrap;
 }
 
 #msg-input{
@@ -112,6 +119,7 @@ border:none;
 border-radius:20px;
 background:#2f3136;
 color:white;
+min-width:120px;
 }
 
 .file-label{
@@ -146,6 +154,31 @@ display:none;
 max-width:200px;
 }
 
+#dm-panel{
+position:fixed;
+top:60px;
+left:10px;
+background:#2f3136;
+padding:15px;
+border-radius:10px;
+display:none;
+max-width:220px;
+}
+
+@media (max-width:600px){
+
+.avatar{
+width:34px;
+height:34px;
+}
+
+button{
+font-size:12px;
+padding:6px;
+}
+
+}
+
 </style>
 </head>
 
@@ -156,6 +189,7 @@ max-width:200px;
 <div class="logo">🍌 BANANEKO CHAT</div>
 
 <div class="menu">
+<button onclick="toggleDM()">💬DM</button>
 <button onclick="showUsers()">👥</button>
 <button onclick="changeName()">名前</button>
 <button onclick="changeIcon()">アイコン</button>
@@ -168,6 +202,11 @@ max-width:200px;
 <div id="user-list">
 <h3>オンライン</h3>
 <div id="users"></div>
+</div>
+
+<div id="dm-panel">
+<h3>DM</h3>
+<div id="dm-list"></div>
 </div>
 
 <div id="emoji-panel"></div>
@@ -191,7 +230,7 @@ max-width:200px;
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, set, remove, onValue, get, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBRE5BJBF-fOMJKq3yIq9IQkCFcQUYL900",
@@ -205,9 +244,6 @@ appId:"1:126454688177:web:24b9bba7d71b759f38819"
 
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
-
-const chatRef=ref(db,"messages");
-const usersRef=ref(db,"onlineUsers");
 
 const ADMIN="Bananeko345";
 
@@ -225,11 +261,22 @@ icon="https://cdn-icons-png.flaticon.com/512/149/149071.png";
 localStorage.setItem("chatIcon",icon);
 }
 
+const banCheck=await get(ref(db,"bans/"+username));
+
+if(banCheck.exists()){
+alert("あなたはBANされています");
+document.body.innerHTML="<h1 style='color:white;text-align:center;margin-top:40vh;'>BANされています</h1>";
+throw new Error("banned");
+}
+
+const chatRef=query(ref(db,"messages"),limitToLast(50));
+const usersRef=ref(db,"onlineUsers");
+
 const userRef=ref(db,"onlineUsers/"+username);
 
 set(userRef,true);
 
-push(chatRef,{
+push(ref(db,"messages"),{
 system:true,
 text:username+" さんいらっしゃい！"
 });
@@ -238,7 +285,7 @@ window.addEventListener("beforeunload",()=>{
 
 remove(userRef);
 
-push(chatRef,{
+push(ref(db,"messages"),{
 system:true,
 text:username+" さんが退出しました"
 });
@@ -246,213 +293,31 @@ text:username+" さんが退出しました"
 });
 
 window.changeName=()=>{
-
 const n=prompt("新しい名前");
-
 if(n){
 remove(userRef);
-username=n;
 localStorage.setItem("chatName",n);
 location.reload();
 }
-
 }
 
 window.changeIcon=()=>{
-
-const type=prompt("1:URL  2:端末画像");
-
-if(type==="1"){
-
-const url=prompt("画像URL");
-
+const url=prompt("アイコンURL");
 if(url){
 icon=url;
 localStorage.setItem("chatIcon",url);
 }
-
 }
 
-if(type==="2"){
-
-const input=document.createElement("input");
-input.type="file";
-input.accept="image/*";
-
-input.onchange=()=>{
-
-const file=input.files[0];
-const reader=new FileReader();
-
-reader.onload=e=>{
-icon=e.target.result;
-localStorage.setItem("chatIcon",icon);
-};
-
-reader.readAsDataURL(file);
-
-};
-
-input.click();
-
+window.toggleDM=()=>{
+const panel=document.getElementById("dm-panel");
+panel.style.display=panel.style.display==="block"?"none":"block";
 }
 
+window.showUsers=()=>{
+const list=document.getElementById("user-list");
+list.style.display=list.style.display==="block"?"none":"block";
 }
-
-const emojis=["😀","😂","😎","😍","🥺","😭","👍","🔥","🎉","❤️"];
-
-const panel=document.getElementById("emoji-panel");
-
-emojis.forEach(e=>{
-const span=document.createElement("span");
-span.textContent=e;
-
-span.onclick=()=>{
-document.getElementById("msg-input").value+=e;
-panel.style.display="none";
-};
-
-panel.appendChild(span);
-});
-
-window.toggleEmoji=()=>{
-panel.style.display=
-panel.style.display==="block"?"none":"block";
-}
-
-function readImage(file){
-
-return new Promise(resolve=>{
-const reader=new FileReader();
-reader.onload=e=>resolve(e.target.result);
-reader.readAsDataURL(file);
-});
-
-}
-
-window.sendMessage=async()=>{
-
-const text=document.getElementById("msg-input").value.trim();
-const imgFile=document.getElementById("img").files[0];
-const file=document.getElementById("file-input").files[0];
-
-if(text==="" && !imgFile && !file) return;
-
-let image=null;
-let fileURL=null;
-let fileName=null;
-
-if(imgFile){
-image=await readImage(imgFile);
-}
-
-if(file){
-fileURL=URL.createObjectURL(file);
-fileName=file.name;
-}
-
-push(chatRef,{
-name:username,
-icon:icon,
-text:text,
-image:image,
-file:fileURL,
-fileName:fileName
-});
-
-document.getElementById("msg-input").value="";
-document.getElementById("img").value="";
-document.getElementById("file-input").value="";
-}
-
-document.getElementById("msg-input").addEventListener("keydown",e=>{
-if(e.key==="Enter") sendMessage();
-});
-
-onChildAdded(chatRef,(snapshot)=>{
-
-const data=snapshot.val();
-const key=snapshot.key;
-
-const chatBox=document.getElementById("chat-box");
-
-if(data.system){
-
-const div=document.createElement("div");
-div.className="system";
-div.textContent=data.text;
-chatBox.appendChild(div);
-
-chatBox.scrollTop=chatBox.scrollHeight;
-return;
-
-}
-
-const msg=document.createElement("div");
-msg.className="msg";
-
-const avatar=document.createElement("img");
-avatar.className="avatar";
-avatar.src=data.icon;
-
-const bubble=document.createElement("div");
-bubble.className="bubble";
-
-const name=document.createElement("div");
-name.className="name";
-name.textContent=data.name;
-
-bubble.appendChild(name);
-
-if(data.text){
-
-const text=document.createElement("div");
-text.textContent=data.text;
-bubble.appendChild(text);
-
-}
-
-if(data.image){
-
-const img=document.createElement("img");
-img.src=data.image;
-img.className="chat-img";
-bubble.appendChild(img);
-
-}
-
-if(data.file){
-
-const link=document.createElement("a");
-link.href=data.file;
-link.download=data.fileName;
-link.textContent="📦 "+data.fileName;
-link.className="file";
-bubble.appendChild(link);
-
-}
-
-msg.appendChild(avatar);
-msg.appendChild(bubble);
-
-chatBox.appendChild(msg);
-chatBox.scrollTop=chatBox.scrollHeight;
-
-msg.oncontextmenu=e=>{
-
-e.preventDefault();
-
-if(username===data.name || username===ADMIN){
-
-if(confirm("削除する？")){
-remove(ref(db,"messages/"+key));
-}
-
-}
-
-};
-
-});
 
 onValue(usersRef,(snap)=>{
 
@@ -465,20 +330,136 @@ for(let u in users){
 
 const div=document.createElement("div");
 div.textContent="🟢 "+u;
+
+div.onclick=()=>openUserMenu(u);
+
 box.appendChild(div);
 
 }
 
 });
 
-window.showUsers=()=>{
+function openUserMenu(user){
 
-const list=document.getElementById("user-list");
+if(user===username)return;
 
-list.style.display=
-list.style.display==="block"?"none":"block";
+let text="";
+
+text+="DMする\n";
+
+if(username===ADMIN){
+text+="KICK\nBAN\n";
+}
+
+const act=prompt(user+"\n"+text);
+
+if(act==="DMする"){
+alert("DMは次のアップデートで動きます");
+}
+
+if(act==="BAN" && username===ADMIN){
+set(ref(db,"bans/"+user),true);
+alert("BANしました");
+}
+
+if(act==="KICK" && username===ADMIN){
+remove(ref(db,"onlineUsers/"+user));
+alert("KICKしました");
+}
 
 }
+
+function readImage(file){
+return new Promise(resolve=>{
+const reader=new FileReader();
+reader.onload=e=>resolve(e.target.result);
+reader.readAsDataURL(file);
+});
+}
+
+window.sendMessage=async()=>{
+
+const text=document.getElementById("msg-input").value.trim();
+const imgFile=document.getElementById("img").files[0];
+const file=document.getElementById("file-input").files[0];
+
+if(text==="" && !imgFile && !file)return;
+
+let image=null;
+
+if(imgFile){
+image=await readImage(imgFile);
+}
+
+push(ref(db,"messages"),{
+name:username,
+icon:icon,
+text:text,
+image:image
+});
+
+document.getElementById("msg-input").value="";
+document.getElementById("img").value="";
+document.getElementById("file-input").value="";
+}
+
+onChildAdded(chatRef,(snapshot)=>{
+
+const data=snapshot.val();
+
+const chatBox=document.getElementById("chat-box");
+
+if(data.system){
+
+const div=document.createElement("div");
+div.className="system";
+div.textContent=data.text;
+chatBox.appendChild(div);
+return;
+
+}
+
+const msg=document.createElement("div");
+msg.className="msg";
+
+const avatar=document.createElement("img");
+avatar.className="avatar";
+avatar.src=data.icon;
+
+avatar.onclick=()=>{
+openUserMenu(data.name);
+};
+
+const bubble=document.createElement("div");
+bubble.className="bubble";
+
+const name=document.createElement("div");
+name.className="name";
+name.textContent=data.name;
+
+bubble.appendChild(name);
+
+if(data.text){
+const text=document.createElement("div");
+text.textContent=data.text;
+bubble.appendChild(text);
+}
+
+if(data.image){
+const img=document.createElement("img");
+img.src=data.image;
+img.className="chat-img";
+bubble.appendChild(img);
+}
+
+msg.appendChild(avatar);
+msg.appendChild(bubble);
+
+chatBox.appendChild(msg);
+
+chatBox.scrollTop=chatBox.scrollHeight;
+
+});
 
 </script>
 
