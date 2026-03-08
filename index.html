@@ -5,7 +5,6 @@
 <title>BANANEKO CHAT</title>
 
 <style>
-
 *{box-sizing:border-box}
 
 body{
@@ -97,12 +96,6 @@ border-radius:8px;
 margin-top:6px;
 }
 
-.file{
-display:block;
-margin-top:6px;
-color:#57a6ff;
-}
-
 #input-area{
 display:flex;
 gap:6px;
@@ -120,27 +113,6 @@ border-radius:20px;
 background:#2f3136;
 color:white;
 min-width:120px;
-}
-
-.file-label{
-font-size:11px;
-color:#aaa;
-}
-
-#emoji-panel{
-position:absolute;
-bottom:70px;
-left:10px;
-background:#2f3136;
-padding:10px;
-border-radius:10px;
-display:none;
-}
-
-#emoji-panel span{
-font-size:22px;
-padding:4px;
-cursor:pointer;
 }
 
 #user-list{
@@ -162,7 +134,20 @@ background:#2f3136;
 padding:15px;
 border-radius:10px;
 display:none;
-max-width:220px;
+max-width:240px;
+}
+
+#dm-chat{
+margin-top:10px;
+border-top:1px solid #444;
+padding-top:10px;
+max-height:200px;
+overflow:auto;
+}
+
+.dm-msg{
+font-size:13px;
+margin-bottom:6px;
 }
 
 @media (max-width:600px){
@@ -178,7 +163,6 @@ padding:6px;
 }
 
 }
-
 </style>
 </head>
 
@@ -207,24 +191,13 @@ padding:6px;
 <div id="dm-panel">
 <h3>DM</h3>
 <div id="dm-list"></div>
+<div id="dm-chat"></div>
 </div>
 
-<div id="emoji-panel"></div>
-
 <div id="input-area">
-
-<button onclick="toggleEmoji()">😀</button>
-
 <input id="msg-input" placeholder="メッセージ">
-
-<div class="file-label">画像</div>
 <input type="file" id="img" accept="image/*">
-
-<div class="file-label">ファイル</div>
-<input type="file" id="file-input">
-
 <button onclick="sendMessage()">送信</button>
-
 </div>
 
 <script type="module">
@@ -265,7 +238,7 @@ const banCheck=await get(ref(db,"bans/"+username));
 
 if(banCheck.exists()){
 alert("あなたはBANされています");
-document.body.innerHTML="<h1 style='color:white;text-align:center;margin-top:40vh;'>BANされています</h1>";
+document.body.innerHTML="<h1 style='text-align:center;margin-top:40vh;'>BANされています</h1>";
 throw new Error("banned");
 }
 
@@ -276,21 +249,27 @@ const userRef=ref(db,"onlineUsers/"+username);
 
 set(userRef,true);
 
-push(ref(db,"messages"),{
-system:true,
-text:username+" さんいらっしゃい！"
-});
-
 window.addEventListener("beforeunload",()=>{
 
 remove(userRef);
 
-push(ref(db,"messages"),{
-system:true,
-text:username+" さんが退出しました"
 });
 
+document.getElementById("msg-input").addEventListener("keypress",(e)=>{
+if(e.key==="Enter"){
+sendMessage();
+}
 });
+
+window.toggleDM=()=>{
+const panel=document.getElementById("dm-panel");
+panel.style.display=panel.style.display==="block"?"none":"block";
+}
+
+window.showUsers=()=>{
+const list=document.getElementById("user-list");
+list.style.display=list.style.display==="block"?"none":"block";
+}
 
 window.changeName=()=>{
 const n=prompt("新しい名前");
@@ -307,16 +286,6 @@ if(url){
 icon=url;
 localStorage.setItem("chatIcon",url);
 }
-}
-
-window.toggleDM=()=>{
-const panel=document.getElementById("dm-panel");
-panel.style.display=panel.style.display==="block"?"none":"block";
-}
-
-window.showUsers=()=>{
-const list=document.getElementById("user-list");
-list.style.display=list.style.display==="block"?"none":"block";
 }
 
 onValue(usersRef,(snap)=>{
@@ -343,28 +312,53 @@ function openUserMenu(user){
 
 if(user===username)return;
 
-let text="";
+const act=prompt(user+"\nDM");
 
-text+="DMする\n";
-
-if(username===ADMIN){
-text+="KICK\nBAN\n";
+if(act==="DM"){
+openDM(user);
 }
 
-const act=prompt(user+"\n"+text);
-
-if(act==="DMする"){
-alert("DMは次のアップデートで動きます");
 }
 
-if(act==="BAN" && username===ADMIN){
-set(ref(db,"bans/"+user),true);
-alert("BANしました");
-}
+let currentDM=null;
 
-if(act==="KICK" && username===ADMIN){
-remove(ref(db,"onlineUsers/"+user));
-alert("KICKしました");
+function openDM(user){
+
+currentDM=user;
+
+const chat=document.getElementById("dm-chat");
+chat.innerHTML="";
+
+const dmRef=ref(db,"dms/"+username+"/"+user);
+
+onChildAdded(dmRef,(snap)=>{
+
+const data=snap.val();
+
+const div=document.createElement("div");
+div.className="dm-msg";
+div.textContent=data.name+" : "+data.text;
+
+chat.appendChild(div);
+
+chat.scrollTop=chat.scrollHeight;
+
+});
+
+const msg=prompt(user+" にDM");
+
+if(msg){
+
+push(ref(db,"dms/"+username+"/"+user),{
+name:username,
+text:msg
+});
+
+push(ref(db,"dms/"+user+"/"+username),{
+name:username,
+text:msg
+});
+
 }
 
 }
@@ -381,9 +375,8 @@ window.sendMessage=async()=>{
 
 const text=document.getElementById("msg-input").value.trim();
 const imgFile=document.getElementById("img").files[0];
-const file=document.getElementById("file-input").files[0];
 
-if(text==="" && !imgFile && !file)return;
+if(text==="" && !imgFile)return;
 
 let image=null;
 
@@ -400,7 +393,6 @@ image:image
 
 document.getElementById("msg-input").value="";
 document.getElementById("img").value="";
-document.getElementById("file-input").value="";
 }
 
 onChildAdded(chatRef,(snapshot)=>{
