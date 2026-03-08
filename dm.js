@@ -3,69 +3,61 @@ getDatabase,
 ref,
 push,
 onChildAdded,
-onValue
+onValue,
+set
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const db=getDatabase();
 
-/* =========================
-現在のユーザー
-========================= */
-
 const username=localStorage.getItem("chatName");
 
-/* =========================
-DMパネル
-========================= */
-
-const dmPanel=document.getElementById("dm-panel");
-const dmList=document.getElementById("dm-list");
-
 let currentDM=null;
+let currentUser=null;
 
-/* =========================
-DM開始
-========================= */
+/* ======================
+ルームID
+====================== */
 
-window.startDM=(target)=>{
-
-const room=getRoomId(username,target);
-
-currentDM=room;
-
-openDMWindow(target,room);
-
-addFriend(target);
-
-};
-
-/* =========================
-ルームID作成
-========================= */
-
-function getRoomId(a,b){
+function roomId(a,b){
 
 return [a,b].sort().join("_");
 
 }
 
-/* =========================
+/* ======================
+DM開始
+====================== */
+
+window.startDM=(target)=>{
+
+currentUser=target;
+
+const room=roomId(username,target);
+
+currentDM=room;
+
+saveFriend(target);
+
+openDM(target,room);
+
+};
+
+/* ======================
 フレンド保存
-========================= */
+====================== */
 
-function addFriend(user){
+function saveFriend(user){
 
-const refFriends=ref(db,"friends/"+username+"/"+user);
-
-push(refFriends,{
-name:user
-});
+set(ref(db,"friends/"+username+"/"+user),true);
+set(ref(db,"friends/"+user+"/"+username),true);
 
 }
 
-/* =========================
-DM一覧表示
-========================= */
+/* ======================
+DM一覧
+====================== */
+
+const dmList=document.getElementById("dm-list");
 
 onValue(ref(db,"friends/"+username),(snap)=>{
 
@@ -75,9 +67,7 @@ dmList.innerHTML="";
 
 const data=snap.val();
 
-for(let key in data){
-
-const user=data[key].name;
+for(let user in data){
 
 const div=document.createElement("div");
 
@@ -87,9 +77,13 @@ div.style.cursor="pointer";
 
 div.onclick=()=>{
 
-const room=getRoomId(username,user);
+currentUser=user;
 
-openDMWindow(user,room);
+const room=roomId(username,user);
+
+currentDM=room;
+
+openDM(user,room);
 
 };
 
@@ -99,11 +93,11 @@ dmList.appendChild(div);
 
 });
 
-/* =========================
+/* ======================
 DMウィンドウ
-========================= */
+====================== */
 
-function openDMWindow(user,room){
+function openDM(user,room){
 
 let win=document.getElementById("dm-chat");
 
@@ -112,16 +106,6 @@ if(win)win.remove();
 win=document.createElement("div");
 
 win.id="dm-chat";
-
-win.style.position="fixed";
-win.style.bottom="0";
-win.style.right="10px";
-win.style.width="300px";
-win.style.height="400px";
-win.style.background="#2f3136";
-win.style.borderRadius="10px";
-win.style.display="flex";
-win.style.flexDirection="column";
 
 win.innerHTML=`
 
@@ -133,15 +117,36 @@ DM : ${user}
 <div id="dm-messages" style="flex:1;overflow:auto;padding:10px"></div>
 
 <div style="display:flex">
-<input id="dm-input" style="flex:1;padding:6px">
+
+<input id="dm-input" placeholder="メッセージ" style="flex:1;padding:6px">
+
 <button onclick="sendDM()">送信</button>
+
 </div>
 
 `;
 
 document.body.appendChild(win);
 
-/* メッセージ読み込み */
+/* Enter送信 */
+
+setTimeout(()=>{
+
+const input=document.getElementById("dm-input");
+
+input.addEventListener("keydown",(e)=>{
+
+if(e.key==="Enter"){
+
+sendDM();
+
+}
+
+});
+
+},100);
+
+/* メッセージ履歴 */
 
 const msgRef=ref(db,"dmChats/"+room);
 
@@ -151,9 +156,17 @@ const data=snap.val();
 
 const box=document.getElementById("dm-messages");
 
+if(!box)return;
+
 const div=document.createElement("div");
 
 div.style.marginBottom="6px";
+
+if(data.name===username){
+
+div.style.textAlign="right";
+
+}
 
 div.textContent=data.name+" : "+data.text;
 
@@ -165,13 +178,15 @@ box.scrollTop=box.scrollHeight;
 
 }
 
-/* =========================
+/* ======================
 DM送信
-========================= */
+====================== */
 
 window.sendDM=()=>{
 
 const input=document.getElementById("dm-input");
+
+if(!input)return;
 
 const text=input.value.trim();
 
@@ -189,9 +204,9 @@ input.value="";
 
 };
 
-/* =========================
+/* ======================
 DM閉じる
-========================= */
+====================== */
 
 window.closeDM=()=>{
 
