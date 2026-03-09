@@ -3,114 +3,113 @@
 <head>
 <meta charset="UTF-8">
 <title>BANANEKO CHAT</title>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+
 body{
 font-family:system-ui;
-background:linear-gradient(180deg,#0f1115,#151821);
+background:#0f1115;
 color:white;
 display:flex;
 flex-direction:column;
 height:100vh;
-overflow:hidden;
 }
+
 header{
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding:12px 16px;
+padding:12px;
 background:#111214;
 border-bottom:1px solid #2a2f3a;
 }
+
 .logo{
-font-size:20px;
+font-size:18px;
 font-weight:bold;
 color:#57f287;
 }
-.menu{
-display:flex;
-gap:8px;
+
+.menu button{
+margin-left:6px;
 }
+
 button{
 background:#5865f2;
 border:none;
 color:white;
-padding:7px 12px;
+padding:6px 10px;
 border-radius:8px;
 cursor:pointer;
-font-size:13px;
 }
-button:hover{
-background:#4752c4;
-}
+
 #chat-box{
 flex:1;
 overflow:auto;
-padding:16px;
+padding:15px;
 display:flex;
 flex-direction:column;
-gap:14px;
+gap:12px;
 }
+
 .msg{
 display:flex;
 gap:10px;
-animation:fade .2s ease;
 }
-@keyframes fade{
-from{opacity:0;transform:translateY(5px)}
-to{opacity:1}
-}
+
 .avatar{
-width:42px;
-height:42px;
+width:40px;
+height:40px;
 border-radius:50%;
-object-fit:cover;
 }
+
 .bubble{
 background:#1e2230;
-padding:10px 12px;
+padding:10px;
 border-radius:10px;
 max-width:70%;
 }
+
 .name{
 font-size:12px;
 color:#aaa;
-margin-bottom:4px;
+margin-bottom:3px;
 }
+
 .chat-img{
-max-width:220px;
+max-width:200px;
 border-radius:8px;
-margin-top:6px;
+margin-top:5px;
 }
+
 .file{
-display:block;
-margin-top:6px;
 color:#57a6ff;
-text-decoration:none;
+display:block;
+margin-top:5px;
 }
+
 .system{
 color:#57f287;
 font-size:13px;
 }
+
 #input-area{
 display:flex;
-gap:8px;
-padding:12px;
+gap:6px;
+padding:10px;
 background:#111214;
-border-top:1px solid #2a2f3a;
 }
+
 #msg-input{
 flex:1;
-padding:10px 14px;
-border:none;
+padding:10px;
 border-radius:20px;
+border:none;
 background:#1e2230;
 color:white;
 }
-#emoji-btn{
-font-size:22px;
-background:none;
-}
+
 #emoji-panel{
 position:fixed;
 bottom:80px;
@@ -119,31 +118,31 @@ background:#1e2230;
 padding:10px;
 border-radius:10px;
 display:none;
-max-width:220px;
 }
+
 #emoji-panel span{
 font-size:22px;
-padding:4px;
 cursor:pointer;
+padding:3px;
 }
-#emoji-panel span:hover{
-transform:scale(1.2);
-}
+
 #user-list{
 position:fixed;
 right:10px;
 top:70px;
 background:#1e2230;
-padding:12px;
+padding:10px;
 border-radius:10px;
 display:none;
 }
 </style>
 </head>
+
 <body>
 
 <header>
 <div class="logo">🍌 BANANEKO CHAT</div>
+
 <div class="menu">
 <button onclick="toggleUsers()">👥</button>
 <button onclick="changeName()">名前</button>
@@ -161,16 +160,37 @@ display:none;
 <div id="emoji-panel"></div>
 
 <div id="input-area">
-<button id="emoji-btn" onclick="toggleEmoji()">😀</button>
+<button onclick="toggleEmoji()">😀</button>
 <input id="msg-input" placeholder="メッセージ">
 <input type="file" id="file">
 <button id="send-btn">送信</button>
 </div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, set, remove, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+import {
+getDatabase,
+ref,
+push,
+onChildAdded,
+set,
+remove,
+onValue,
+query,
+limitToLast,
+orderByKey
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+import {
+getStorage,
+ref as sRef,
+uploadBytes,
+getDownloadURL
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBRE5BJBF-fOMJKq3yIq9IQkCFcQUYL900",
@@ -183,35 +203,32 @@ appId:"1:126454688177:web:24b9bba7d71b759f38819"
 };
 
 const app=initializeApp(firebaseConfig);
+
 const db=getDatabase(app);
 const storage=getStorage(app);
 
 let username=localStorage.getItem("chatName");
 
 if(!username){
-username=prompt("名前を決めてください");
+username=prompt("名前を決めてください") || "名無し";
 localStorage.setItem("chatName",username);
 }
 
 let icon=localStorage.getItem("chatIcon") || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
 const userRef=ref(db,"onlineUsers/"+username);
-set(userRef,true);
 
-push(ref(db,"messages"),{
-system:true,
-text:username+" さんいらっしゃい！"
-});
+set(userRef,true);
 
 window.addEventListener("beforeunload",()=>{
 remove(userRef);
-push(ref(db,"messages"),{
-system:true,
-text:username+" さんが退出しました"
-});
 });
 
-const chatRef=query(ref(db,"messages"),limitToLast(120));
+const chatRef=query(
+ref(db,"messages"),
+orderByKey(),
+limitToLast(120)
+);
 
 function readFile(file){
 return new Promise(r=>{
@@ -222,50 +239,67 @@ reader.readAsDataURL(file);
 }
 
 async function sendMessage(){
-  const msgInput = document.getElementById("msg-input");
-  const fileInput = document.getElementById("file");
-  const text = msgInput.value;
-  const file = fileInput.files[0];
 
-  if (!text && !file) return;
+const msgInput=document.getElementById("msg-input");
+const fileInput=document.getElementById("file");
 
-  let fileUrl = null;
-  let fileName = null;
+const text=msgInput.value.trim();
+const file=fileInput.files[0];
 
-  if (file) {
-    fileName = file.name;
-    const fileRef = sRef(storage, `images/${Date.now()}_${fileName}`);
-    await uploadBytes(fileRef, file);
-    fileUrl = await getDownloadURL(fileRef);
-  }
+if(!text && !file)return;
 
-  push(ref(db, "messages"), {
-    name: username,
-    icon: icon,
-    text: text,
-    file: fileUrl,
-    fileName: fileName
-  });
+let fileUrl=null;
+let fileName=null;
 
-  msgInput.value = "";
-  fileInput.value = "";
+if(file){
+
+fileName=file.name;
+
+const fileRef=sRef(storage,"files/"+Date.now()+"_"+fileName);
+
+await uploadBytes(fileRef,file);
+
+fileUrl=await getDownloadURL(fileRef);
+
 }
 
-document.getElementById("send-btn").addEventListener("click", sendMessage);
-document.getElementById("msg-input").addEventListener("keypress", (e) => {
-  if (e.key === "Enter") sendMessage();
+push(ref(db,"messages"),{
+
+name:username,
+icon:icon,
+text:text,
+file:fileUrl,
+fileName:fileName
+
+});
+
+msgInput.value="";
+fileInput.value="";
+}
+
+document.getElementById("send-btn").onclick=sendMessage;
+
+document.getElementById("msg-input").addEventListener("keypress",e=>{
+if(e.key==="Enter")sendMessage();
 });
 
 onChildAdded(chatRef,(snap)=>{
+
 const data=snap.val();
+
 const chat=document.getElementById("chat-box");
 
 if(data.system){
+
 const div=document.createElement("div");
+
 div.className="system";
 div.textContent=data.text;
+
 chat.appendChild(div);
+
 return;
+
 }
 
 const msg=document.createElement("div");
@@ -285,96 +319,165 @@ name.textContent=data.name;
 bubble.appendChild(name);
 
 if(data.text){
+
 const t=document.createElement("div");
 t.textContent=data.text;
+
 bubble.appendChild(t);
+
 }
 
 if(data.file){
-if(data.fileName && data.fileName.match(/\.(png|jpg|jpeg|gif|webp)$/i)){
+
+if(data.fileName.match(/\.(png|jpg|jpeg|gif|webp)$/i)){
+
 const img=document.createElement("img");
+
 img.src=data.file;
 img.className="chat-img";
+
 bubble.appendChild(img);
+
 }else{
+
 const link=document.createElement("a");
+
 link.href=data.file;
 link.download=data.fileName;
 link.textContent="⬇ "+data.fileName;
 link.className="file";
+
 bubble.appendChild(link);
+
 }
+
 }
 
 msg.appendChild(avatar);
 msg.appendChild(bubble);
+
 chat.appendChild(msg);
+
 chat.scrollTop=chat.scrollHeight;
+
 });
 
-const emojis="😀😆😂🤣😊😍😎🤔😭👍🔥🎉🍌❤️".split("");
+const emojis="😀😆😂🤣😊😍😎😭👍🔥🎉🍌❤️".split("");
+
 const panel=document.getElementById("emoji-panel");
 
 emojis.forEach(e=>{
+
 const span=document.createElement("span");
+
 span.textContent=e;
+
 span.onclick=()=>{
-document.getElementById("msg-input").value += e;
+
+document.getElementById("msg-input").value+=e;
+
 };
+
 panel.appendChild(span);
+
 });
 
 window.toggleEmoji=()=>{
-panel.style.display=panel.style.display==="block"?"none":"block";
-}
+
+panel.style.display=
+panel.style.display==="block"?"none":"block";
+
+};
 
 window.toggleUsers=()=>{
+
 const u=document.getElementById("user-list");
-u.style.display=u.style.display==="block"?"none":"block";
-}
+
+u.style.display=
+u.style.display==="block"?"none":"block";
+
+};
 
 window.changeName=()=>{
+
 const n=prompt("新しい名前");
+
 if(n){
+
 localStorage.setItem("chatName",n);
+
 location.reload();
+
 }
-}
+
+};
 
 window.changeIcon=async()=>{
+
 const mode=prompt("1:URL\n2:画像");
+
 if(mode==="1"){
+
 const url=prompt("URL");
+
 if(url){
+
 icon=url;
+
 localStorage.setItem("chatIcon",url);
-}
-}
-if(mode==="2"){
-const input=document.createElement("input");
-input.type="file";
-input.accept="image/*";
-input.onchange=async()=>{
-const file=input.files[0];
-const data=await readFile(file);
-icon=data;
-localStorage.setItem("chatIcon",data);
-};
-input.click();
-}
+
 }
 
-const usersRef=ref(db,"onlineUsers");
-onValue(usersRef,(snap)=>{
-const users=snap.val();
-const box=document.getElementById("users");
-box.innerHTML="";
-for(let u in users){
-const div=document.createElement("div");
-div.textContent="🟢 "+u;
-box.appendChild(div);
 }
+
+if(mode==="2"){
+
+const input=document.createElement("input");
+
+input.type="file";
+input.accept="image/*";
+
+input.onchange=async()=>{
+
+const file=input.files[0];
+
+const data=await readFile(file);
+
+icon=data;
+
+localStorage.setItem("chatIcon",data);
+
+};
+
+input.click();
+
+}
+
+};
+
+const usersRef=ref(db,"onlineUsers");
+
+onValue(usersRef,(snap)=>{
+
+const users=snap.val();
+
+const box=document.getElementById("users");
+
+box.innerHTML="";
+
+for(let u in users){
+
+const div=document.createElement("div");
+
+div.textContent="🟢 "+u;
+
+box.appendChild(div);
+
+}
+
 });
+
 </script>
+
 </body>
 </html>
