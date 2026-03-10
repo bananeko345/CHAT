@@ -20,7 +20,6 @@ font-family:system-ui;
 background:#0f1115;
 color:white;
 height:100vh;
-overflow:hidden;
 transition:0.5s;
 }
 
@@ -141,6 +140,7 @@ cursor:pointer;
 flex:1;
 overflow:auto;
 padding:15px;
+padding-bottom:120px;
 display:flex;
 flex-direction:column;
 gap:12px;
@@ -179,11 +179,23 @@ margin-top:5px;
 /* 入力エリア */
 
 #input-area{
+
+position:fixed;
+bottom:0;
+left:0;
+
+width:100%;
+
+background:#111214;
+
+padding:10px;
+
 display:flex;
 flex-direction:column;
 gap:8px;
-padding:10px;
-background:#111214;
+
+z-index:9999;
+
 }
 
 #msg-input{
@@ -218,7 +230,7 @@ font-weight:bold;
 padding:10px;
 }
 
-/* モバイル */
+/* PC */
 
 @media (min-width:900px){
 
@@ -233,14 +245,6 @@ flex:1;
 
 .bottom-buttons{
 width:auto;
-}
-
-#file{
-flex:none;
-}
-
-#send-btn{
-flex:none;
 }
 
 }
@@ -286,11 +290,6 @@ flex:none;
 
 <div id="chat-box"></div>
 
-<div id="user-list" style="display:none;position:fixed;right:10px;top:70px;background:#1e2230;padding:10px;border-radius:10px;">
-<h4>オンライン</h4>
-<div id="users"></div>
-</div>
-
 <div id="input-area">
 
 <input id="msg-input" placeholder="メッセージ">
@@ -322,7 +321,7 @@ chat.style.display="flex"
 /* Firebase */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, set, remove, onValue, query, limitToLast, orderByKey } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, query, limitToLast, orderByKey } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig={
@@ -339,8 +338,6 @@ const app=initializeApp(firebaseConfig)
 const db=getDatabase(app)
 const storage=getStorage(app)
 
-/* ユーザー */
-
 let username=localStorage.getItem("chatName")
 
 if(!username){
@@ -352,13 +349,11 @@ let icon=localStorage.getItem("chatIcon")||"https://cdn-icons-png.flaticon.com/5
 
 /* Enter送信 */
 
-document.getElementById("msg-input").addEventListener("keypress",(e)=>{
-if(e.key==="Enter"){
-sendMessage()
-}
+msg-input.addEventListener("keypress",(e)=>{
+if(e.key==="Enter") sendMessage()
 })
 
-document.getElementById("send-btn").onclick=sendMessage
+send-btn.onclick=sendMessage
 
 async function sendMessage(){
 
@@ -419,19 +414,7 @@ avatar.className="avatar"
 const bubble=document.createElement("div")
 bubble.className="bubble"
 
-const name=document.createElement("div")
-name.className="name"
-name.textContent=data.name
-
-bubble.appendChild(name)
-
-if(data.text){
-
-const t=document.createElement("div")
-t.textContent=data.text
-bubble.appendChild(t)
-
-}
+bubble.innerHTML="<div class='name'>"+data.name+"</div>"+(data.text||"")
 
 if(data.file){
 
@@ -449,8 +432,6 @@ msg.appendChild(avatar)
 msg.appendChild(bubble)
 
 chat.appendChild(msg)
-
-/* 自動スクロール */
 
 setTimeout(()=>{
 chat.scrollTop=chat.scrollHeight
