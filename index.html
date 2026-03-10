@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>BANANEKO CHAT</title>
 
 <style>
@@ -20,11 +18,11 @@ font-family:system-ui;
 background:#0f1115;
 color:white;
 height:100vh;
+overflow:hidden;
 transition:0.5s;
 }
 
 /* 朝テーマ */
-
 body.day{
 background:linear-gradient(#7ed6ff,#dff6ff);
 color:black;
@@ -140,7 +138,7 @@ cursor:pointer;
 flex:1;
 overflow:auto;
 padding:15px;
-padding-bottom:120px;
+padding-bottom:130px;
 display:flex;
 flex-direction:column;
 gap:12px;
@@ -179,23 +177,17 @@ margin-top:5px;
 /* 入力エリア */
 
 #input-area{
-
 position:fixed;
 bottom:0;
 left:0;
-
 width:100%;
-
-background:#111214;
-
-padding:10px;
-
 display:flex;
 flex-direction:column;
 gap:8px;
-
+padding:10px;
+background:#111214;
 z-index:9999;
-
+padding-bottom:calc(10px + env(safe-area-inset-bottom));
 }
 
 #msg-input{
@@ -247,10 +239,19 @@ flex:1;
 width:auto;
 }
 
+#file{
+flex:none;
+}
+
+#send-btn{
+flex:none;
+}
+
 }
 
 </style>
 </head>
+
 <body>
 
 <div class="bg">
@@ -277,7 +278,6 @@ width:auto;
 <div id="chat">
 
 <header>
-
 <div class="logo">🍌 BANANEKO CHAT</div>
 
 <div>
@@ -285,10 +285,14 @@ width:auto;
 <button onclick="changeName()">名前</button>
 <button onclick="changeIcon()">アイコン</button>
 </div>
-
 </header>
 
 <div id="chat-box"></div>
+
+<div id="user-list" style="display:none;position:fixed;right:10px;top:70px;background:#1e2230;padding:10px;border-radius:10px;">
+<h4>オンライン</h4>
+<div id="users"></div>
+</div>
 
 <div id="input-area">
 
@@ -321,8 +325,23 @@ chat.style.display="flex"
 /* Firebase */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, query, limitToLast, orderByKey } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+import {
+getDatabase,
+ref,
+push,
+onChildAdded,
+query,
+limitToLast,
+orderByKey
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+import {
+getStorage,
+ref as sRef,
+uploadBytes,
+getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBRE5BJBF-fOMJKq3yIq9IQkCFcQUYL900",
@@ -338,6 +357,8 @@ const app=initializeApp(firebaseConfig)
 const db=getDatabase(app)
 const storage=getStorage(app)
 
+/* ユーザー */
+
 let username=localStorage.getItem("chatName")
 
 if(!username){
@@ -349,11 +370,13 @@ let icon=localStorage.getItem("chatIcon")||"https://cdn-icons-png.flaticon.com/5
 
 /* Enter送信 */
 
-msg-input.addEventListener("keypress",(e)=>{
-if(e.key==="Enter") sendMessage()
+document.getElementById("msg-input").addEventListener("keypress",(e)=>{
+if(e.key==="Enter"){
+sendMessage()
+}
 })
 
-send-btn.onclick=sendMessage
+document.getElementById("send-btn").onclick=sendMessage
 
 async function sendMessage(){
 
@@ -371,9 +394,11 @@ let fileName=null
 if(file){
 
 fileName=file.name
+
 const fileRef=sRef(storage,"files/"+Date.now()+"_"+fileName)
 
 await uploadBytes(fileRef,file)
+
 fileUrl=await getDownloadURL(fileRef)
 
 }
@@ -402,6 +427,7 @@ limitToLast(120)
 onChildAdded(chatRef,(snap)=>{
 
 const data=snap.val()
+
 const chat=document.getElementById("chat-box")
 
 const msg=document.createElement("div")
@@ -414,11 +440,25 @@ avatar.className="avatar"
 const bubble=document.createElement("div")
 bubble.className="bubble"
 
-bubble.innerHTML="<div class='name'>"+data.name+"</div>"+(data.text||"")
+const name=document.createElement("div")
+name.className="name"
+name.textContent=data.name
+
+bubble.appendChild(name)
+
+if(data.text){
+
+const t=document.createElement("div")
+t.textContent=data.text
+
+bubble.appendChild(t)
+
+}
 
 if(data.file){
 
 const link=document.createElement("a")
+
 link.href=data.file
 link.textContent=data.fileName
 link.className="file"
@@ -440,5 +480,6 @@ chat.scrollTop=chat.scrollHeight
 })
 
 </script>
+
 </body>
 </html>
