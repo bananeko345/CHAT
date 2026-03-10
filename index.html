@@ -465,6 +465,10 @@ onChildAdded(ref(db,"messages"),(snap)=>{
 
 const data=snap.val()
 
+requestAnimationFrame(()=>{
+
+const fragment=document.createDocumentFragment()
+
 const msg=document.createElement("div")
 msg.className="msg"
 
@@ -475,6 +479,19 @@ msg.innerHTML=`
 ${data.text||""}
 </div>
 `
+
+fragment.appendChild(msg)
+
+chat.appendChild(fragment)
+
+chat.scrollTo({
+top:chat.scrollHeight,
+behavior:"smooth"
+})
+
+})
+
+})
 
 chat.appendChild(msg)
 
