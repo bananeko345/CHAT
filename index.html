@@ -7,11 +7,7 @@
 
 <style>
 
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
+*{margin:0;padding:0;box-sizing:border-box}
 
 body{
 font-family:system-ui;
@@ -45,28 +41,9 @@ background:rgba(120,255,180,0.15);
 animation:float 18s infinite ease-in-out;
 }
 
-.circle:nth-child(1){
-width:400px;
-height:400px;
-left:-120px;
-top:120px;
-}
-
-.circle:nth-child(2){
-width:300px;
-height:300px;
-right:-80px;
-top:200px;
-animation-duration:22s;
-}
-
-.circle:nth-child(3){
-width:500px;
-height:500px;
-left:30%;
-bottom:-250px;
-animation-duration:26s;
-}
+.circle:nth-child(1){width:400px;height:400px;left:-120px;top:120px}
+.circle:nth-child(2){width:300px;height:300px;right:-80px;top:200px;animation-duration:22s}
+.circle:nth-child(3){width:500px;height:500px;left:30%;bottom:-250px;animation-duration:26s}
 
 @keyframes float{
 0%{transform:translateY(0)}
@@ -224,26 +201,11 @@ padding:10px;
 
 @media (min-width:900px){
 
-#input-area{
-flex-direction:row;
-align-items:center;
-}
-
-#msg-input{
-flex:1;
-}
-
-.bottom-buttons{
-width:auto;
-}
-
-#file{
-flex:none;
-}
-
-#send-btn{
-flex:none;
-}
+#input-area{flex-direction:row;align-items:center}
+#msg-input{flex:1}
+.bottom-buttons{width:auto}
+#file{flex:none}
+#send-btn{flex:none}
 
 }
 
@@ -303,6 +265,8 @@ flex:none;
 
 <script type="module">
 
+/* テーマ */
+
 window.setTheme=(mode)=>{
 if(mode==="day"){
 document.body.classList.add("day")
@@ -311,9 +275,16 @@ document.body.classList.remove("day")
 }
 }
 
+/* チャット開始 修正 */
+
 window.startChat=()=>{
+
+const home=document.getElementById("home")
+const chat=document.getElementById("chat")
+
 home.style.display="none"
 chat.style.display="flex"
+
 }
 
 /* Firebase */
@@ -327,7 +298,6 @@ push,
 onChildAdded,
 onValue,
 set,
-remove,
 onDisconnect,
 onChildRemoved
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -362,7 +332,8 @@ username=prompt("名前")||"名無し"
 localStorage.setItem("chatName",username)
 }
 
-let icon=localStorage.getItem("chatIcon")||"https://cdn-icons-png.flaticon.com/512/149/149071.png"
+let icon=localStorage.getItem("chatIcon")||
+"https://cdn-icons-png.flaticon.com/512/149/149071.png"
 
 /* 名前変更 */
 
@@ -376,45 +347,18 @@ localStorage.setItem("chatName",n)
 
 /* アイコン変更 */
 
-window.changeIcon=async()=>{
-
-let type=prompt("1:URL 2:端末")
-
-if(type==="1"){
-let url=prompt("URL")
+window.changeIcon=()=>{
+let url=prompt("アイコンURL")
 if(url){
 icon=url
 localStorage.setItem("chatIcon",url)
 }
 }
 
-if(type==="2"){
-let input=document.createElement("input")
-input.type="file"
-
-input.onchange=async e=>{
-let file=e.target.files[0]
-
-let fileRef=sRef(storage,"icons/"+Date.now())
-
-await uploadBytes(fileRef,file)
-
-icon=await getDownloadURL(fileRef)
-
-localStorage.setItem("chatIcon",icon)
-}
-
-input.click()
-}
-
-}
-
-/* Enter送信 */
+/* 送信 */
 
 document.getElementById("msg-input").addEventListener("keypress",(e)=>{
-if(e.key==="Enter"){
-sendMessage()
-}
+if(e.key==="Enter") sendMessage()
 })
 
 document.getElementById("send-btn").onclick=sendMessage
@@ -461,13 +405,9 @@ fileInput.value=""
 
 const chat=document.getElementById("chat-box")
 
-onChildAdded(ref(db,"messages"),(snap)=>{
+onChildAdded(ref(db,"messages"),snap=>{
 
 const data=snap.val()
-
-requestAnimationFrame(()=>{
-
-const fragment=document.createDocumentFragment()
 
 const msg=document.createElement("div")
 msg.className="msg"
@@ -477,21 +417,9 @@ msg.innerHTML=`
 <div class="bubble">
 <div class="name">${data.name}</div>
 ${data.text||""}
+${data.file?`<a class="file" href="${data.file}" target="_blank">${data.fileName}</a>`:""}
 </div>
 `
-
-fragment.appendChild(msg)
-
-chat.appendChild(fragment)
-
-chat.scrollTo({
-top:chat.scrollHeight,
-behavior:"smooth"
-})
-
-})
-
-})
 
 chat.appendChild(msg)
 
