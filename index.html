@@ -74,6 +74,35 @@ animation-duration:26s;
 100%{transform:translateY(0px)}
 }
 
+/* お知らせパネル */
+
+#noticePanel{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+display:flex;
+align-items:center;
+justify-content:center;
+z-index:9999;
+}
+
+.noticeBox{
+background:#1e2230;
+padding:35px;
+border-radius:16px;
+text-align:center;
+width:320px;
+animation:pop .4s;
+}
+
+@keyframes pop{
+0%{transform:scale(.8);opacity:0}
+100%{transform:scale(1);opacity:1}
+}
+
 /* ホーム */
 
 #home{
@@ -109,15 +138,6 @@ right:15px;
 
 .top-controls button{
 margin-left:6px;
-}
-
-/* お知らせ */
-
-.notice{
-margin-bottom:20px;
-background:#1e2230;
-padding:15px;
-border-radius:10px;
 }
 
 /* チャット */
@@ -224,6 +244,19 @@ color:white;
 <div class="circle"></div>
 </div>
 
+<!-- お知らせパネル -->
+
+<div id="noticePanel">
+<div class="noticeBox">
+<h2>📢 お知らせ</h2>
+<br>
+2026/03/10<br>
+BANANEKO CHAT 公開！
+<br><br>
+<button onclick="closeNotice()">OK</button>
+</div>
+</div>
+
 <!-- HOME -->
 
 <div id="home">
@@ -231,12 +264,6 @@ color:white;
 <div class="top-controls">
 <button onclick="setTheme('day')">☀️</button>
 <button onclick="setTheme('night')">🌙</button>
-</div>
-
-<div class="notice">
-<b>お知らせ</b><br>
-2026/03/10<br>
-BANANEKO CHAT 公開！
 </div>
 
 <button class="start-btn" onclick="startChat()">チャットを開始する</button>
@@ -275,6 +302,17 @@ BANANEKO CHAT 公開！
 
 <script type="module">
 
+/* お知らせ */
+
+if(localStorage.getItem("notice20260310")){
+document.getElementById("noticePanel").style.display="none"
+}
+
+window.closeNotice=()=>{
+localStorage.setItem("notice20260310","true")
+document.getElementById("noticePanel").style.display="none"
+}
+
 /* テーマ */
 
 window.setTheme=(mode)=>{
@@ -292,9 +330,7 @@ document.getElementById("home").style.display="none"
 const chat=document.getElementById("chat")
 chat.style.display="flex"
 
-setTimeout(()=>{
-scrollBottom()
-},200)
+setTimeout(()=>{scrollBottom()},200)
 }
 
 /* Firebase */
@@ -332,8 +368,6 @@ const userRef=ref(db,"onlineUsers/"+username)
 
 set(userRef,true)
 
-/* 参加メッセージ */
-
 push(ref(db,"messages"),{
 system:true,
 text:username+" さんがいらっしゃいました！"
@@ -348,8 +382,6 @@ text:username+" さんが退出しました"
 })
 
 })
-
-/* チャット */
 
 const chatRef=query(
 ref(db,"messages"),
@@ -399,8 +431,6 @@ fileInput.value=""
 
 }
 
-/* メッセージ表示 */
-
 onChildAdded(chatRef,(snap)=>{
 
 const data=snap.val()
@@ -414,9 +444,7 @@ msg.className="notice-msg"
 msg.textContent=data.text
 
 chat.appendChild(msg)
-
 scrollBottom()
-
 return
 
 }
@@ -464,23 +492,16 @@ scrollBottom()
 
 })
 
-/* 自動スクロール */
-
 function scrollBottom(){
-
 const chat=document.getElementById("chat-box")
 chat.scrollTop=chat.scrollHeight
-
 }
-
-/* オンライン */
 
 const usersRef=ref(db,"onlineUsers")
 
 onValue(usersRef,(snap)=>{
 
 const users=snap.val()
-
 const box=document.getElementById("users")
 
 box.innerHTML=""
@@ -488,7 +509,6 @@ box.innerHTML=""
 for(let u in users){
 
 const div=document.createElement("div")
-
 div.textContent="🟢 "+u
 
 box.appendChild(div)
@@ -498,33 +518,24 @@ box.appendChild(div)
 })
 
 window.toggleUsers=()=>{
-
 const u=document.getElementById("user-list")
-
 u.style.display=u.style.display==="block"?"none":"block"
-
 }
 
 window.changeName=()=>{
-
 const n=prompt("名前")
-
 if(n){
 localStorage.setItem("chatName",n)
 location.reload()
 }
-
 }
 
 window.changeIcon=()=>{
-
 const url=prompt("アイコンURL")
-
 if(url){
 localStorage.setItem("chatIcon",url)
 location.reload()
 }
-
 }
 
 </script>
