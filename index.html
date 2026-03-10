@@ -222,8 +222,6 @@ font-weight:bold;
 padding:10px;
 }
 
-/* PC */
-
 @media (min-width:900px){
 
 #input-area{
@@ -260,8 +258,6 @@ flex:none;
 <div class="circle"></div>
 </div>
 
-<!-- HOME -->
-
 <div id="home">
 
 <div class="top-controls">
@@ -272,8 +268,6 @@ flex:none;
 <button class="start-btn" onclick="startChat()">チャット開始</button>
 
 </div>
-
-<!-- CHAT -->
 
 <div id="chat">
 
@@ -331,9 +325,11 @@ getDatabase,
 ref,
 push,
 onChildAdded,
-query,
-limitToLast,
-orderByKey
+onValue,
+set,
+remove,
+onDisconnect,
+onChildRemoved
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 import {
@@ -367,6 +363,51 @@ localStorage.setItem("chatName",username)
 }
 
 let icon=localStorage.getItem("chatIcon")||"https://cdn-icons-png.flaticon.com/512/149/149071.png"
+
+/* 名前変更 */
+
+window.changeName=()=>{
+let n=prompt("新しい名前",username)
+if(n){
+username=n
+localStorage.setItem("chatName",n)
+}
+}
+
+/* アイコン変更 */
+
+window.changeIcon=async()=>{
+
+let type=prompt("1:URL 2:端末")
+
+if(type==="1"){
+let url=prompt("URL")
+if(url){
+icon=url
+localStorage.setItem("chatIcon",url)
+}
+}
+
+if(type==="2"){
+let input=document.createElement("input")
+input.type="file"
+
+input.onchange=async e=>{
+let file=e.target.files[0]
+
+let fileRef=sRef(storage,"icons/"+Date.now())
+
+await uploadBytes(fileRef,file)
+
+icon=await getDownloadURL(fileRef)
+
+localStorage.setItem("chatIcon",icon)
+}
+
+input.click()
+}
+
+}
 
 /* Enter送信 */
 
@@ -418,66 +459,92 @@ fileInput.value=""
 
 /* メッセージ表示 */
 
-const chatRef=query(
-ref(db,"messages"),
-orderByKey(),
-limitToLast(120)
-)
+const chat=document.getElementById("chat-box")
 
-onChildAdded(chatRef,(snap)=>{
+onChildAdded(ref(db,"messages"),(snap)=>{
 
 const data=snap.val()
-
-const chat=document.getElementById("chat-box")
 
 const msg=document.createElement("div")
 msg.className="msg"
 
-const avatar=document.createElement("img")
-avatar.src=data.icon
-avatar.className="avatar"
-
-const bubble=document.createElement("div")
-bubble.className="bubble"
-
-const name=document.createElement("div")
-name.className="name"
-name.textContent=data.name
-
-bubble.appendChild(name)
-
-if(data.text){
-
-const t=document.createElement("div")
-t.textContent=data.text
-
-bubble.appendChild(t)
-
-}
-
-if(data.file){
-
-const link=document.createElement("a")
-
-link.href=data.file
-link.textContent=data.fileName
-link.className="file"
-link.target="_blank"
-
-bubble.appendChild(link)
-
-}
-
-msg.appendChild(avatar)
-msg.appendChild(bubble)
+msg.innerHTML=`
+<img class="avatar" src="${data.icon}">
+<div class="bubble">
+<div class="name">${data.name}</div>
+${data.text||""}
+</div>
+`
 
 chat.appendChild(msg)
 
-setTimeout(()=>{
 chat.scrollTop=chat.scrollHeight
-},50)
 
 })
+
+/* オンライン */
+
+const userId=Math.random().toString(36)
+
+const userRef=ref(db,"online/"+userId)
+
+set(userRef,{
+name:username,
+icon:icon
+})
+
+onDisconnect(userRef).remove()
+
+/* オンライン一覧 */
+
+onValue(ref(db,"online"),snap=>{
+
+const users=document.getElementById("users")
+users.innerHTML=""
+
+snap.forEach(c=>{
+let u=c.val()
+let div=document.createElement("div")
+div.textContent=u.name
+users.appendChild(div)
+})
+
+})
+
+/* 参加通知 */
+
+onChildAdded(ref(db,"online"),snap=>{
+
+let u=snap.val()
+
+push(ref(db,"messages"),{
+name:"SYSTEM",
+icon:"https://cdn-icons-png.flaticon.com/512/1827/1827370.png",
+text:u.name+"さんいらっしゃい！"
+})
+
+})
+
+/* 退出通知 */
+
+onChildRemoved(ref(db,"online"),snap=>{
+
+let u=snap.val()
+
+push(ref(db,"messages"),{
+name:"SYSTEM",
+icon:"https://cdn-icons-png.flaticon.com/512/1827/1827370.png",
+text:u.name+"さんが退出しました"
+})
+
+})
+
+/* オンラインボタン */
+
+window.toggleUsers=()=>{
+const box=document.getElementById("user-list")
+box.style.display=box.style.display==="none"?"block":"none"
+}
 
 </script>
 
