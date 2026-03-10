@@ -18,6 +18,14 @@ background:#0f1115;
 color:white;
 height:100vh;
 overflow:hidden;
+transition:0.5s;
+}
+
+/* 朝テーマ */
+
+body.day{
+background:linear-gradient(#7ed6ff,#dff6ff);
+color:black;
 }
 
 /* 背景 */
@@ -91,37 +99,25 @@ transition:0.25s;
 transform:scale(1.05);
 }
 
-.start-btn:active{
-transform:scale(0.9);
+/* 右上設定 */
+
+.top-controls{
+position:absolute;
+top:15px;
+right:15px;
 }
 
-/* フェード */
-
-.fade{
-animation:fade .5s;
-}
-
-@keyframes fade{
-from{opacity:0;transform:scale(.95)}
-to{opacity:1;transform:scale(1)}
+.top-controls button{
+margin-left:6px;
 }
 
 /* お知らせ */
 
-#notice{
-position:fixed;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
+.notice{
+margin-bottom:20px;
 background:#1e2230;
-padding:30px;
-border-radius:16px;
-display:none;
-text-align:center;
-}
-
-#notice button{
-margin-top:20px;
+padding:15px;
+border-radius:10px;
 }
 
 /* チャット */
@@ -145,10 +141,6 @@ border-bottom:1px solid #2a2f3a;
 font-size:18px;
 font-weight:bold;
 color:#57f287;
-}
-
-.menu button{
-margin-left:6px;
 }
 
 button{
@@ -193,16 +185,17 @@ color:#aaa;
 margin-bottom:3px;
 }
 
-.chat-img{
-max-width:200px;
-border-radius:8px;
-margin-top:5px;
-}
-
 .file{
 color:#57a6ff;
 display:block;
 margin-top:5px;
+}
+
+/* お知らせメッセージ */
+
+.notice-msg{
+color:#57f287;
+font-weight:bold;
 }
 
 #input-area{
@@ -223,7 +216,6 @@ color:white;
 
 </style>
 </head>
-
 <body>
 
 <div class="bg">
@@ -236,17 +228,18 @@ color:white;
 
 <div id="home">
 
-<button class="start-btn" onclick="startChat()">チャットを開始する</button>
-
+<div class="top-controls">
+<button onclick="setTheme('day')">☀️</button>
+<button onclick="setTheme('night')">🌙</button>
 </div>
 
-<!-- NOTICE -->
+<div class="notice">
+<b>お知らせ</b><br>
+2026/03/10<br>
+BANANEKO CHAT 公開！
+</div>
 
-<div id="notice">
-
-<div>2026/03/10</div>
-
-<button onclick="closeNotice()">OK</button>
+<button class="start-btn" onclick="startChat()">チャットを開始する</button>
 
 </div>
 
@@ -257,11 +250,12 @@ color:white;
 <header>
 <div class="logo">🍌 BANANEKO CHAT</div>
 
-<div class="menu">
+<div>
 <button onclick="toggleUsers()">👥</button>
 <button onclick="changeName()">名前</button>
 <button onclick="changeIcon()">アイコン</button>
 </div>
+
 </header>
 
 <div id="chat-box"></div>
@@ -281,55 +275,33 @@ color:white;
 
 <script type="module">
 
-/* お知らせ */
+/* テーマ */
 
-if(!localStorage.getItem("notice20260310")){
-document.getElementById("notice").style.display="block"
+window.setTheme=(mode)=>{
+if(mode==="day"){
+document.body.classList.add("day")
+}else{
+document.body.classList.remove("day")
+}
 }
 
-window.closeNotice=()=>{
-localStorage.setItem("notice20260310","true")
-document.getElementById("notice").style.display="none"
-}
-
-/* ホーム → チャット */
+/* チャット開始 */
 
 window.startChat=()=>{
-
 document.getElementById("home").style.display="none"
-
 const chat=document.getElementById("chat")
-
 chat.style.display="flex"
-chat.classList.add("fade")
 
+setTimeout(()=>{
+scrollBottom()
+},200)
 }
 
 /* Firebase */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-import {
-getDatabase,
-ref,
-push,
-onChildAdded,
-set,
-remove,
-onValue,
-query,
-limitToLast,
-orderByKey
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-import {
-getStorage,
-ref as sRef,
-uploadBytes,
-getDownloadURL
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { getDatabase, ref, push, onChildAdded, set, remove, onValue, query, limitToLast, orderByKey } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyBRE5BJBF-fOMJKq3yIq9IQkCFcQUYL900",
@@ -342,7 +314,6 @@ appId:"1:126454688177:web:24b9bba7d71b759f38819"
 };
 
 const app=initializeApp(firebaseConfig)
-
 const db=getDatabase(app)
 const storage=getStorage(app)
 
@@ -361,8 +332,21 @@ const userRef=ref(db,"onlineUsers/"+username)
 
 set(userRef,true)
 
+/* 参加メッセージ */
+
+push(ref(db,"messages"),{
+system:true,
+text:username+" さんがいらっしゃいました！"
+})
+
 window.addEventListener("beforeunload",()=>{
 remove(userRef)
+
+push(ref(db,"messages"),{
+system:true,
+text:username+" さんが退出しました"
+})
+
 })
 
 /* チャット */
@@ -395,23 +379,19 @@ let fileName=null
 if(file){
 
 fileName=file.name
-
 const fileRef=sRef(storage,"files/"+Date.now()+"_"+fileName)
 
 await uploadBytes(fileRef,file)
-
 fileUrl=await getDownloadURL(fileRef)
 
 }
 
 push(ref(db,"messages"),{
-
 name:username,
 icon:icon,
 text:text,
 file:fileUrl,
 fileName:fileName
-
 })
 
 msgInput.value=""
@@ -419,13 +399,28 @@ fileInput.value=""
 
 }
 
+/* メッセージ表示 */
+
 onChildAdded(chatRef,(snap)=>{
 
 const data=snap.val()
-
 const chat=document.getElementById("chat-box")
 
 const msg=document.createElement("div")
+
+if(data.system){
+
+msg.className="notice-msg"
+msg.textContent=data.text
+
+chat.appendChild(msg)
+
+scrollBottom()
+
+return
+
+}
+
 msg.className="msg"
 
 const avatar=document.createElement("img")
@@ -452,7 +447,6 @@ bubble.appendChild(t)
 if(data.file){
 
 const link=document.createElement("a")
-
 link.href=data.file
 link.textContent=data.fileName
 link.className="file"
@@ -466,9 +460,18 @@ msg.appendChild(bubble)
 
 chat.appendChild(msg)
 
-chat.scrollTop=chat.scrollHeight
+scrollBottom()
 
 })
+
+/* 自動スクロール */
+
+function scrollBottom(){
+
+const chat=document.getElementById("chat-box")
+chat.scrollTop=chat.scrollHeight
+
+}
 
 /* オンライン */
 
@@ -507,11 +510,8 @@ window.changeName=()=>{
 const n=prompt("名前")
 
 if(n){
-
 localStorage.setItem("chatName",n)
-
 location.reload()
-
 }
 
 }
@@ -521,16 +521,12 @@ window.changeIcon=()=>{
 const url=prompt("アイコンURL")
 
 if(url){
-
 localStorage.setItem("chatIcon",url)
-
 location.reload()
-
 }
 
 }
 
 </script>
-
 </body>
 </html>
