@@ -135,6 +135,8 @@ border-radius:8px;
 cursor:pointer;
 }
 
+/* チャット */
+
 #chat-box{
 flex:1;
 overflow:auto;
@@ -174,61 +176,71 @@ display:block;
 margin-top:5px;
 }
 
+/* 入力エリア */
+
 #input-area{
 display:flex;
+flex-direction:column;
 gap:8px;
 padding:10px;
 background:#111214;
+}
+
+#msg-input{
+width:100%;
+padding:12px;
+border-radius:20px;
+border:none;
+background:#1e2230;
+color:white;
+font-size:16px;
+}
+
+.bottom-buttons{
+display:flex;
+gap:8px;
+width:100%;
+}
+
+#file{
+flex:1;
+color:white;
+background:#1e2230;
+padding:8px;
+border-radius:8px;
+}
+
+#send-btn{
+flex:1;
+background:#57f287;
+color:black;
+font-weight:bold;
+padding:10px;
+}
+
+/* モバイル */
+
+@media (min-width:900px){
+
+#input-area{
+flex-direction:row;
 align-items:center;
 }
 
 #msg-input{
 flex:1;
-padding:10px;
-border-radius:20px;
-border:none;
-background:#1e2230;
-color:white;
+}
+
+.bottom-buttons{
+width:auto;
 }
 
 #file{
-color:white;
+flex:none;
 }
 
 #send-btn{
-background:#57f287;
-color:black;
-font-weight:bold;
-}
-
-/* モバイル */
-
-@media (max-width:900px){
-
-#input-area{
-flex-wrap:wrap;
-}
-
-#msg-input{
-flex-basis:100%;
-}
-
-#file{
-flex:1;
-}
-
-#send-btn{
-flex:1;
-}
-
-.bubble{
-max-width:85%;
-font-size:14px;
-}
-
-.avatar{
-width:36px;
-height:36px;
+flex:none;
 }
 
 }
@@ -280,9 +292,14 @@ height:36px;
 </div>
 
 <div id="input-area">
+
 <input id="msg-input" placeholder="メッセージ">
+
+<div class="bottom-buttons">
 <input type="file" id="file">
 <button id="send-btn">送信</button>
+</div>
+
 </div>
 
 </div>
@@ -340,8 +357,6 @@ if(e.key==="Enter"){
 sendMessage()
 }
 })
-
-/* 送信 */
 
 document.getElementById("send-btn").onclick=sendMessage
 
@@ -435,7 +450,7 @@ msg.appendChild(bubble)
 
 chat.appendChild(msg)
 
-/* 自動スクロール強化 */
+/* 自動スクロール */
 
 setTimeout(()=>{
 chat.scrollTop=chat.scrollHeight
