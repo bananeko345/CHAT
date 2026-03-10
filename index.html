@@ -5,13 +5,129 @@
 <title>BANANEKO CHAT</title>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
 
 body{
 font-family:system-ui;
 background:#0f1115;
 color:white;
+height:100vh;
+overflow:hidden;
+}
+
+/* 背景 */
+
+.bg{
+position:fixed;
+width:100%;
+height:100%;
+overflow:hidden;
+z-index:-1;
+}
+
+.circle{
+position:absolute;
+border-radius:50%;
+background:rgba(120,255,180,0.15);
+animation:float 18s infinite ease-in-out;
+}
+
+.circle:nth-child(1){
+width:400px;
+height:400px;
+left:-120px;
+top:120px;
+}
+
+.circle:nth-child(2){
+width:300px;
+height:300px;
+right:-80px;
+top:200px;
+animation-duration:22s;
+}
+
+.circle:nth-child(3){
+width:500px;
+height:500px;
+left:30%;
+bottom:-250px;
+animation-duration:26s;
+}
+
+@keyframes float{
+0%{transform:translateY(0px)}
+50%{transform:translateY(-100px)}
+100%{transform:translateY(0px)}
+}
+
+/* ホーム */
+
+#home{
+height:100vh;
 display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+}
+
+.start-btn{
+font-size:22px;
+padding:18px 50px;
+background:#5865f2;
+border:none;
+border-radius:14px;
+color:white;
+cursor:pointer;
+transition:0.25s;
+}
+
+.start-btn:hover{
+transform:scale(1.05);
+}
+
+.start-btn:active{
+transform:scale(0.9);
+}
+
+/* フェード */
+
+.fade{
+animation:fade .5s;
+}
+
+@keyframes fade{
+from{opacity:0;transform:scale(.95)}
+to{opacity:1;transform:scale(1)}
+}
+
+/* お知らせ */
+
+#notice{
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:#1e2230;
+padding:30px;
+border-radius:16px;
+display:none;
+text-align:center;
+}
+
+#notice button{
+margin-top:20px;
+}
+
+/* チャット */
+
+#chat{
+display:none;
 flex-direction:column;
 height:100vh;
 }
@@ -89,11 +205,6 @@ display:block;
 margin-top:5px;
 }
 
-.system{
-color:#57f287;
-font-size:13px;
-}
-
 #input-area{
 display:flex;
 gap:6px;
@@ -110,35 +221,38 @@ background:#1e2230;
 color:white;
 }
 
-#emoji-panel{
-position:fixed;
-bottom:80px;
-left:10px;
-background:#1e2230;
-padding:10px;
-border-radius:10px;
-display:none;
-}
-
-#emoji-panel span{
-font-size:22px;
-cursor:pointer;
-padding:3px;
-}
-
-#user-list{
-position:fixed;
-right:10px;
-top:70px;
-background:#1e2230;
-padding:10px;
-border-radius:10px;
-display:none;
-}
 </style>
 </head>
 
 <body>
+
+<div class="bg">
+<div class="circle"></div>
+<div class="circle"></div>
+<div class="circle"></div>
+</div>
+
+<!-- HOME -->
+
+<div id="home">
+
+<button class="start-btn" onclick="startChat()">チャットを開始する</button>
+
+</div>
+
+<!-- NOTICE -->
+
+<div id="notice">
+
+<div>2026/03/10</div>
+
+<button onclick="closeNotice()">OK</button>
+
+</div>
+
+<!-- CHAT -->
+
+<div id="chat">
 
 <header>
 <div class="logo">🍌 BANANEKO CHAT</div>
@@ -152,21 +266,46 @@ display:none;
 
 <div id="chat-box"></div>
 
-<div id="user-list">
+<div id="user-list" style="display:none;position:fixed;right:10px;top:70px;background:#1e2230;padding:10px;border-radius:10px;">
 <h4>オンライン</h4>
 <div id="users"></div>
 </div>
 
-<div id="emoji-panel"></div>
-
 <div id="input-area">
-<button onclick="toggleEmoji()">😀</button>
 <input id="msg-input" placeholder="メッセージ">
 <input type="file" id="file">
 <button id="send-btn">送信</button>
 </div>
 
+</div>
+
 <script type="module">
+
+/* お知らせ */
+
+if(!localStorage.getItem("notice20260310")){
+document.getElementById("notice").style.display="block"
+}
+
+window.closeNotice=()=>{
+localStorage.setItem("notice20260310","true")
+document.getElementById("notice").style.display="none"
+}
+
+/* ホーム → チャット */
+
+window.startChat=()=>{
+
+document.getElementById("home").style.display="none"
+
+const chat=document.getElementById("chat")
+
+chat.style.display="flex"
+chat.classList.add("fade")
+
+}
+
+/* Firebase */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
@@ -202,64 +341,66 @@ messagingSenderId:"126454688177",
 appId:"1:126454688177:web:24b9bba7d71b759f38819"
 };
 
-const app=initializeApp(firebaseConfig);
+const app=initializeApp(firebaseConfig)
 
-const db=getDatabase(app);
-const storage=getStorage(app);
+const db=getDatabase(app)
+const storage=getStorage(app)
 
-let username=localStorage.getItem("chatName");
+/* ユーザー */
+
+let username=localStorage.getItem("chatName")
 
 if(!username){
-username=prompt("名前を決めてください") || "名無し";
-localStorage.setItem("chatName",username);
+username=prompt("名前")||"名無し"
+localStorage.setItem("chatName",username)
 }
 
-let icon=localStorage.getItem("chatIcon") || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+let icon=localStorage.getItem("chatIcon")||"https://cdn-icons-png.flaticon.com/512/149/149071.png"
 
-const userRef=ref(db,"onlineUsers/"+username);
+const userRef=ref(db,"onlineUsers/"+username)
 
-set(userRef,true);
+set(userRef,true)
 
 window.addEventListener("beforeunload",()=>{
-remove(userRef);
-});
+remove(userRef)
+})
+
+/* チャット */
 
 const chatRef=query(
 ref(db,"messages"),
 orderByKey(),
 limitToLast(120)
-);
+)
 
-function readFile(file){
-return new Promise(r=>{
-const reader=new FileReader();
-reader.onload=e=>r(e.target.result);
-reader.readAsDataURL(file);
-});
-}
+document.getElementById("send-btn").onclick=sendMessage
+
+document.getElementById("msg-input").addEventListener("keypress",e=>{
+if(e.key==="Enter")sendMessage()
+})
 
 async function sendMessage(){
 
-const msgInput=document.getElementById("msg-input");
-const fileInput=document.getElementById("file");
+const msgInput=document.getElementById("msg-input")
+const fileInput=document.getElementById("file")
 
-const text=msgInput.value.trim();
-const file=fileInput.files[0];
+const text=msgInput.value.trim()
+const file=fileInput.files[0]
 
-if(!text && !file)return;
+if(!text&&!file)return
 
-let fileUrl=null;
-let fileName=null;
+let fileUrl=null
+let fileName=null
 
 if(file){
 
-fileName=file.name;
+fileName=file.name
 
-const fileRef=sRef(storage,"files/"+Date.now()+"_"+fileName);
+const fileRef=sRef(storage,"files/"+Date.now()+"_"+fileName)
 
-await uploadBytes(fileRef,file);
+await uploadBytes(fileRef,file)
 
-fileUrl=await getDownloadURL(fileRef);
+fileUrl=await getDownloadURL(fileRef)
 
 }
 
@@ -271,211 +412,123 @@ text:text,
 file:fileUrl,
 fileName:fileName
 
-});
+})
 
-msgInput.value="";
-fileInput.value="";
+msgInput.value=""
+fileInput.value=""
+
 }
-
-document.getElementById("send-btn").onclick=sendMessage;
-
-document.getElementById("msg-input").addEventListener("keypress",e=>{
-if(e.key==="Enter")sendMessage();
-});
 
 onChildAdded(chatRef,(snap)=>{
 
-const data=snap.val();
+const data=snap.val()
 
-const chat=document.getElementById("chat-box");
+const chat=document.getElementById("chat-box")
 
-if(data.system){
+const msg=document.createElement("div")
+msg.className="msg"
 
-const div=document.createElement("div");
+const avatar=document.createElement("img")
+avatar.src=data.icon
+avatar.className="avatar"
 
-div.className="system";
-div.textContent=data.text;
+const bubble=document.createElement("div")
+bubble.className="bubble"
 
-chat.appendChild(div);
+const name=document.createElement("div")
+name.className="name"
+name.textContent=data.name
 
-return;
-
-}
-
-const msg=document.createElement("div");
-msg.className="msg";
-
-const avatar=document.createElement("img");
-avatar.src=data.icon;
-avatar.className="avatar";
-
-const bubble=document.createElement("div");
-bubble.className="bubble";
-
-const name=document.createElement("div");
-name.className="name";
-name.textContent=data.name;
-
-bubble.appendChild(name);
+bubble.appendChild(name)
 
 if(data.text){
 
-const t=document.createElement("div");
-t.textContent=data.text;
-
-bubble.appendChild(t);
+const t=document.createElement("div")
+t.textContent=data.text
+bubble.appendChild(t)
 
 }
 
 if(data.file){
 
-if(data.fileName.match(/\.(png|jpg|jpeg|gif|webp)$/i)){
+const link=document.createElement("a")
 
-const img=document.createElement("img");
+link.href=data.file
+link.textContent=data.fileName
+link.className="file"
 
-img.src=data.file;
-img.className="chat-img";
-
-bubble.appendChild(img);
-
-}else{
-
-const link=document.createElement("a");
-
-link.href=data.file;
-link.download=data.fileName;
-link.textContent="⬇ "+data.fileName;
-link.className="file";
-
-bubble.appendChild(link);
+bubble.appendChild(link)
 
 }
 
-}
+msg.appendChild(avatar)
+msg.appendChild(bubble)
 
-msg.appendChild(avatar);
-msg.appendChild(bubble);
+chat.appendChild(msg)
 
-chat.appendChild(msg);
+chat.scrollTop=chat.scrollHeight
 
-chat.scrollTop=chat.scrollHeight;
+})
 
-});
+/* オンライン */
 
-const emojis="😀😆😂🤣😊😍😎😭👍🔥🎉🍌❤️".split("");
-
-const panel=document.getElementById("emoji-panel");
-
-emojis.forEach(e=>{
-
-const span=document.createElement("span");
-
-span.textContent=e;
-
-span.onclick=()=>{
-
-document.getElementById("msg-input").value+=e;
-
-};
-
-panel.appendChild(span);
-
-});
-
-window.toggleEmoji=()=>{
-
-panel.style.display=
-panel.style.display==="block"?"none":"block";
-
-};
-
-window.toggleUsers=()=>{
-
-const u=document.getElementById("user-list");
-
-u.style.display=
-u.style.display==="block"?"none":"block";
-
-};
-
-window.changeName=()=>{
-
-const n=prompt("新しい名前");
-
-if(n){
-
-localStorage.setItem("chatName",n);
-
-location.reload();
-
-}
-
-};
-
-window.changeIcon=async()=>{
-
-const mode=prompt("1:URL\n2:画像");
-
-if(mode==="1"){
-
-const url=prompt("URL");
-
-if(url){
-
-icon=url;
-
-localStorage.setItem("chatIcon",url);
-
-}
-
-}
-
-if(mode==="2"){
-
-const input=document.createElement("input");
-
-input.type="file";
-input.accept="image/*";
-
-input.onchange=async()=>{
-
-const file=input.files[0];
-
-const data=await readFile(file);
-
-icon=data;
-
-localStorage.setItem("chatIcon",data);
-
-};
-
-input.click();
-
-}
-
-};
-
-const usersRef=ref(db,"onlineUsers");
+const usersRef=ref(db,"onlineUsers")
 
 onValue(usersRef,(snap)=>{
 
-const users=snap.val();
+const users=snap.val()
 
-const box=document.getElementById("users");
+const box=document.getElementById("users")
 
-box.innerHTML="";
+box.innerHTML=""
 
 for(let u in users){
 
-const div=document.createElement("div");
+const div=document.createElement("div")
 
-div.textContent="🟢 "+u;
+div.textContent="🟢 "+u
 
-box.appendChild(div);
+box.appendChild(div)
 
 }
 
-});
+})
+
+window.toggleUsers=()=>{
+
+const u=document.getElementById("user-list")
+
+u.style.display=u.style.display==="block"?"none":"block"
+
+}
+
+window.changeName=()=>{
+
+const n=prompt("名前")
+
+if(n){
+
+localStorage.setItem("chatName",n)
+
+location.reload()
+
+}
+
+}
+
+window.changeIcon=()=>{
+
+const url=prompt("アイコンURL")
+
+if(url){
+
+localStorage.setItem("chatIcon",url)
+
+location.reload()
+
+}
+
+}
 
 </script>
 
